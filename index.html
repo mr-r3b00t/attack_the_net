@@ -368,7 +368,7 @@
             var tweetButton = document.getElementById('tweet-button');
             timeDisplay.textContent = `Time Taken: ${formatTime(timeTaken)}`;
             scoreDisplay.textContent = `Score: ${score.toLocaleString()}`;
-            const tweetText = `I attacked the net and won! my time was ${formatTime(timeTaken)} wit ${score.toLocaleString()} points! play here: https://mr-r3b00t.github.io/attack_the_net/ #AttackTheNet #Hacking #game`;
+            const tweetText = `I attacked the net and won! my time was ${formatTime(timeTaken)} with ${score.toLocaleString()} points! play here: https://mr-r3b00t.github.io/attack_the_net/ #AttackTheNet #Hacking #game`;
             const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
             tweetButton.onclick = () => window.open(tweetUrl, '_blank');
             modal.style.display = 'flex';
