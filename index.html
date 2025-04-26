@@ -142,6 +142,12 @@
             margin: 0.5rem 0;
             font-size: 1.2rem;
         }
+        .modal-content .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
         .modal-content button {
             background: #444;
             color: #fff;
@@ -150,10 +156,15 @@
             cursor: pointer;
             font-size: 1rem;
             border-radius: 3px;
-            margin-top: 1rem;
         }
         .modal-content button:hover {
             background: #555;
+        }
+        .modal-content .tweet-button {
+            background: #1DA1F2; /* Twitter blue */
+        }
+        .modal-content .tweet-button:hover {
+            background: #1991DB;
         }
         @media (max-width: 768px) {
             .container {
@@ -175,6 +186,10 @@
             }
             .modal-content p {
                 font-size: 1rem;
+            }
+            .modal-content .button-container {
+                flex-direction: column;
+                gap: 0.5rem;
             }
         }
     </style>
@@ -199,7 +214,10 @@
             <p>Game Over</p>
             <p id="time-taken">Time Taken: --:--</p>
             <p id="score">Score: 0</p>
-            <button onclick="restartGame()">Restart</button>
+            <div class="button-container">
+                <button onclick="restartGame()">Restart</button>
+                <button class="tweet-button" id="tweet-button">Tweet Score</button>
+            </div>
         </div>
     </div>
     <script>
@@ -310,8 +328,8 @@
 
         // Calculate score based on time taken
         function calculateScore(timeTaken) {
-            const maxScore = 100000; // Maximum score
-            const score = Math.max(0, maxScore - timeTaken); // Subtract time (in seconds) from max score, cap at 0
+            const maxScore = 100000;
+            const score = Math.max(0, maxScore - timeTaken);
             return Math.floor(score);
         }
 
@@ -320,8 +338,13 @@
             var modal = document.getElementById('win-modal');
             var timeDisplay = document.getElementById('time-taken');
             var scoreDisplay = document.getElementById('score');
+            var tweetButton = document.getElementById('tweet-button');
             timeDisplay.textContent = `Time Taken: ${formatTime(timeTaken)}`;
             scoreDisplay.textContent = `Score: ${score.toLocaleString()}`;
+            // Construct tweet text
+            const tweetText = `I attacked the net and won! my time was ${formatTime(timeTaken)} wit ${score.toLocaleString()} points! play here: https://mr-r3b00t.github.io/attack_the_net/ #AttackTheNet #Hacking #game`;
+            const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+            tweetButton.onclick = () => window.open(tweetUrl, '_blank');
             modal.style.display = 'flex';
         }
 
