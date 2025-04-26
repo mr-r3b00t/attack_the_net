@@ -111,6 +111,9 @@
         #menu button:hover {
             background: #555;
         }
+        #menu button.hidden {
+            display: none;
+        }
         /* Modal Styles */
         .modal {
             display: none;
@@ -211,7 +214,7 @@
     </div>
     <div id="menu">
         <button onclick="performAction('scan')" aria-label="Scan node for services">Scan</button>
-        <button onclick="performAction('exploit')" aria-label="Exploit node to compromise it">Exploit</button>
+        <button id="exploit-button" class="hidden" onclick="performAction('exploit')" aria-label="Exploit node to compromise it">Exploit</button>
         <button onclick="closeMenu()" aria-label="Close action menu">Close</button>
     </div>
     <div id="intro-modal" class="modal" style="display: flex;">
@@ -410,6 +413,13 @@
         function showMenu(nodeId, event) {
             isMenuOpening = true;
             var menu = document.getElementById('menu');
+            var exploitButton = document.getElementById('exploit-button');
+            // Show or hide Exploit button based on scan status
+            if (player.scannedNodes.includes(nodeId)) {
+                exploitButton.classList.remove('hidden');
+            } else {
+                exploitButton.classList.add('hidden');
+            }
             menu.style.left = '10px';
             menu.style.top = '10px';
             menu.style.display = 'block';
