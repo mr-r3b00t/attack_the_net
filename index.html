@@ -166,6 +166,12 @@
         .modal-content .tweet-button:hover {
             background: #1991DB;
         }
+        .modal-content .start-button {
+            background: #66ff66; /* Green to match theme */
+        }
+        .modal-content .start-button:hover {
+            background: #55cc55;
+        }
         @media (max-width: 768px) {
             .container {
                 grid-template-columns: 100%;
@@ -207,6 +213,12 @@
         <button onclick="performAction('scan')" aria-label="Scan node for services">Scan</button>
         <button onclick="performAction('exploit')" aria-label="Exploit node to compromise it">Exploit</button>
         <button onclick="closeMenu()" aria-label="Close action menu">Close</button>
+    </div>
+    <div id="intro-modal" class="modal" style="display: flex;">
+        <div class="modal-content">
+            <h2>Are you ready to attack the Net?</h2>
+            <button class="start-button" onclick="startGame()">START</button>
+        </div>
     </div>
     <div id="win-modal" class="modal">
         <div class="modal-content">
@@ -307,7 +319,7 @@
             compromisedNodes: [1], // Internet is compromised
             reachableNodes: [2, 3, 4], // Initially can reach Web Server, Email Server, VPN Server
             scannedNodes: [], // Track scanned nodes
-            startTime: Date.now() // Track game start time
+            startTime: null // Set when START button is clicked
         };
 
         // Log function
@@ -333,6 +345,18 @@
             return Math.floor(score);
         }
 
+        // Start game (hide intro modal and set start time)
+        function startGame() {
+            var introModal = document.getElementById('intro-modal');
+            introModal.style.display = 'none';
+            player.startTime = Date.now();
+            // Add initial log messages after starting
+            addToLog('Game started. You are on the Internet. Objective: Compromise the File Server.');
+            addToLog(`Initial tools: ${player.tools.join(', ') || 'None'}.`);
+            addToLog(`Can initially attack: Node 2, Node 3, Node 4.`);
+            addToLog('Left-click a node to open the context menu. Scan nodes to reveal their identity and services, then exploit them. Start with Node 2, Node 3, and Node 4 to reveal and attack the Firewall. Compromise the Firewall to access the internal network, then exploit HR Web Server and HR Database Server to obtain User Credential, and finally compromise File Server to win.');
+        }
+
         // Show win modal
         function showWinModal(timeTaken, score) {
             var modal = document.getElementById('win-modal');
@@ -341,7 +365,6 @@
             var tweetButton = document.getElementById('tweet-button');
             timeDisplay.textContent = `Time Taken: ${formatTime(timeTaken)}`;
             scoreDisplay.textContent = `Score: ${score.toLocaleString()}`;
-            // Construct tweet text
             const tweetText = `I attacked the net and won! my time was ${formatTime(timeTaken)} wit ${score.toLocaleString()} points! play here: https://mr-r3b00t.github.io/attack_the_net/ #AttackTheNet #Hacking #game`;
             const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
             tweetButton.onclick = () => window.open(tweetUrl, '_blank');
@@ -531,12 +554,6 @@
             addToLog(message);
             closeMenu();
         }
-
-        // Initial log messages
-        addToLog('Game started. You are on the Internet. Objective: Compromise the File Server.');
-        addToLog(`Initial tools: ${player.tools.join(', ') || 'None'}.`);
-        addToLog(`Can initially attack: Node 2, Node 3, Node 4.`);
-        addToLog('Left-click a node to open the context menu. Scan nodes to reveal their identity and services, then exploit them. Start with Node 2, Node 3, and Node 4 to reveal and attack the Firewall. Compromise the Firewall to access the internal network, then exploit HR Web Server and HR Database Server to obtain User Credential, and finally compromise File Server to win.');
     </script>
 </body>
 </html>
