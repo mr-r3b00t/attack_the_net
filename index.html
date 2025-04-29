@@ -172,7 +172,7 @@
             }
         }
     </style>
-    <script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+    <script src="https://unpkg.com/vis-network@9.1.0/standalone/umd/vis-network.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -401,23 +401,32 @@
             location.reload();
         }
 
-        // Pathfinding functions
-        function togglePathfindingMode() {
-            player.pathfindingMode = !player.pathfindingMode;
-            player.selectedNodes = [];
-            if (player.pathfindingMode) {
-                addToLog('Pathfinding mode activated. Click the start node, then the end node.');
-            } else {
-                addToLog('Pathfinding mode deactivated.');
-                resetEdgeColors();
-            }
-        }
+       // Pathfinding functions
+       function togglePathfindingMode() {
+    player.pathfindingMode = !player.pathfindingMode;
+    player.selectedNodes = [];
+    network.unselectAll();
+    network.selectNodes([]);
+    if (player.pathfindingMode) {
+        addToLog('Pathfinding mode activated. Click the start node, then the end node.');
+        closeMenu();
+        closeSocialEngineeringMenu();
+        resetEdgeColors();
+    } else {
+        addToLog('Pathfinding mode deactivated.');
+        resetEdgeColors();
+        closeMenu();
+        closeSocialEngineeringMenu();
+    }
+}
 
         function resetEdgeColors() {
             edges.update(edges.get().map(edge => ({ id: edge.id, color: { color: '#ccc' } })));
         }
 
         function findPath(startId, endId) {
+
+
             // Map tools to their source nodes
             const toolSources = {
                 'Web Exploit': 1, // Internet
@@ -558,67 +567,95 @@
 
         // Highlight path edges
         function highlightPath(path) {
-            resetEdgeColors();
-            const pathEdges = [];
-            for (let i = 0; i < path.length - 1; i++) {
-                const from = path[i];
-                const to = path[i + 1];
-                const edge = edges.get().find(e => 
-                    !e.hidden && 
-                    ((e.from === from && e.to === to) || (e.from === to && e.to === from))
-                );
-                if (edge) {
-                    pathEdges.push({ id: edge.id, color: { color: '#ff0000' } }); // Red color
-                }
-            }
-            edges.update(pathEdges);
-            setTimeout(resetEdgeColors, 10000); // Revert after 10 seconds
+    const pathEdges = [];
+    for (let i = 0; i < path.length - 1; i++) {
+        const from = path[i];
+        const to = path[i + 1];
+        const edge = edges.get().find(e => 
+            ((e.from === from && e.to === to) || (e.from === to && e.to === from))
+        );
+        if (edge) {
+            pathEdges.push({ id: edge.id, color: { color: '#ff0000' } });
         }
+    }
+    edges.update(pathEdges);
 
+    // Reset edge colors and ensure no nodes are selected after 10 seconds
+    setTimeout(() => {
+        resetEdgeColors();
+        network.unselectAll();
+        network.selectNodes([]);
+    }, 10000);
+}
         // Menu handling
         let isMenuOpening = false;
+        
 
         // Handle node left-click
-        network.on('click', function(params) {
-            if (params.nodes.length > 0) {
-                const nodeId = params.nodes[0];
-                const nodeLabel = nodes.get(nodeId).originalLabel;
-                console.log(`Left-clicked node ${nodeId}: ${nodeLabel}`);
+ // Handle node left-click
+ network.on('click', function(params) {
+    if (params.nodes.length > 0) {
+        const nodeId = params.nodes[0];
+        const nodeLabel = nodes.get(nodeId).originalLabel;
+        console.log(`Left-clicked node ${nodeId}: ${nodeLabel}`);
 
-                if (player.pathfindingMode) {
-                    player.selectedNodes.push(nodeId);
-                    addToLog(`Selected node ${nodeId} (${nodeLabel}) for pathfinding.`);
-                    if (player.selectedNodes.length === 2) {
-                        const [startId, endId] = player.selectedNodes;
-                        const path = findPath(startId, endId);
-                        if (path) {
-                            const startLabel = nodes.get(startId).originalLabel;
-                            const endLabel = nodes.get(endId).originalLabel;
-                            addToLog(`Path from ${startLabel} (Node ${startId}) to ${endLabel} (Node ${endId}): ${path.map(id => nodes.get(id).originalLabel).join(' -> ')}`);
-                            const steps = getRequiredSteps(path);
-                            if (steps.length > 0) {
-                                addToLog('Required steps:');
-                                steps.forEach(step => addToLog(step));
-                            } else {
-                                addToLog('No additional steps required (all nodes already compromised or accessible).');
-                            }
-                            highlightPath(path);
-                        } else {
-                            addToLog(`No valid path found from ${nodes.get(startId).originalLabel} (Node ${startId}) to ${nodes.get(endId).originalLabel} (Node ${endId}). Ensure intermediate nodes are accessible.`);
-                        }
-                        player.pathfindingMode = false;
-                        player.selectedNodes = [];
-                        addToLog('Pathfinding mode deactivated.');
-                    }
-                } else {
-                    if (nodeId === 1) {
-                        console.log('Clicked Internet node; no menu displayed.');
-                        return;
-                    }
-                    showMenu(nodeId, params.event);
+        if (player.pathfindingMode) {
+            player.selectedNodes.push(nodeId);
+            addToLog(`Selected node ${nodeId} (${nodeLabel}) for pathfinding.`);
+            if (player.selectedNodes.length === 2) {
+                const [startId, endId] = player.selectedNodes;
+                const startNode = nodes.get(startId);
+                const endNode = nodes.get(endId);
+
+                let canFindPath = true;
+                if (endNode.group === 'internal' && !player.compromisedNodes.includes(5)) {
+                    addToLog(`Cannot find path to ${endNode.originalLabel} (Node ${endId}). Compromise the Firewall (Node 5) to access the internal network.`);
+                    canFindPath = false;
                 }
+
+                if (canFindPath) {
+                    const path = findPath(startId, endId);
+                    if (path) {
+                        const startLabel = nodes.get(startId).originalLabel;
+                        const endLabel = nodes.get(endId).originalLabel;
+                        addToLog(`Path from ${startLabel} (Node ${startId}) to ${endLabel} (Node ${endId}): ${path.map(id => nodes.get(id).originalLabel).join(' -> ')}`);
+                        const steps = getRequiredSteps(path);
+                        if (steps.length > 0) {
+                            addToLog('Required steps:');
+                            steps.forEach(step => addToLog(step));
+                        } else {
+                            addToLog('No additional steps required (all nodes already compromised or accessible).');
+                        }
+                        highlightPath(path); // Highlight the path
+                    } else {
+                        addToLog(`No valid path found from ${nodes.get(startId).originalLabel} (Node ${startId}) to ${nodes.get(endId).originalLabel} (Node ${endId}). Ensure intermediate nodes are accessible.`);
+                    }
+                }
+
+                // Reset pathfinding mode and clear selections
+                player.pathfindingMode = false;
+                player.selectedNodes = [];
+                closeMenu();
+                closeSocialEngineeringMenu();
+                network.unselectAll(); // Clear node selections
+                network.selectNodes([]); // Explicitly set no nodes as selected
+                addToLog('Pathfinding mode deactivated.');
             }
-        });
+        } else {
+            if (nodeId === 1) {
+                console.log('Clicked Internet node; no menu displayed.');
+                return;
+            }
+            showMenu(nodeId, params.event);
+        }
+    } else {
+        // Clear selection if clicking on the canvas (no node selected)
+        network.unselectAll();
+        network.selectNodes([]);
+        closeMenu();
+        closeSocialEngineeringMenu();
+    }
+});
 
         // Handle node right-click
         network.on('oncontext', function(params) {
@@ -634,21 +671,25 @@
 
         // Close menus on click outside
         document.addEventListener('click', function(event) {
-            if (isMenuOpening) {
-                isMenuOpening = false;
-                return;
-            }
-            const menu = document.getElementById('menu');
-            const seMenu = document.getElementById('social-engineering-menu');
-            if (menu.style.display === 'block' && !menu.contains(event.target)) {
-                console.log('Menu closed');
-                closeMenu();
-            }
-            if (seMenu.style.display === 'block' && !seMenu.contains(event.target)) {
-                console.log('Social Engineering Menu closed');
-                closeSocialEngineeringMenu();
-            }
-        });
+    if (isMenuOpening || player.pathfindingMode) {
+        isMenuOpening = false;
+        return;
+    }
+    const menu = document.getElementById('menu');
+    const seMenu = document.getElementById('social-engineering-menu');
+    if (menu.style.display === 'block' && !menu.contains(event.target)) {
+        console.log('Menu closed');
+        closeMenu();
+        network.unselectAll();
+        network.selectNodes([]);
+    }
+    if (seMenu.style.display === 'block' && !seMenu.contains(event.target)) {
+        console.log('Social Engineering Menu closed');
+        closeSocialEngineeringMenu();
+        network.unselectAll();
+        network.selectNodes([]);
+    }
+});
 
         // Show standard menu
         function showMenu(nodeId, event) {
@@ -756,156 +797,156 @@
 
         // Perform standard action
         function performAction(action) {
-            const nodeId = parseInt(document.getElementById('menu').dataset.nodeId);
-            const node = nodes.get(nodeId);
-            let message = '';
+    const nodeId = parseInt(document.getElementById('menu').dataset.nodeId);
+    const node = nodes.get(nodeId);
+    let message = '';
 
-            console.log(`Action performed: ${action} on node ${nodeId}: ${node.originalLabel}`);
+    console.log(`Action performed: ${action} on node ${nodeId}: ${node.originalLabel}`);
 
-            if (!isReachable(nodeId) && action !== 'scan') {
-                message = `You cannot interact with this node. Compromise more nodes to expand your reach.`;
-            } else if (node.group === 'internal' && !player.compromisedNodes.includes(5) && action !== 'scan') {
-                message = `Cannot perform ${action} on this node. Compromise the Firewall to access the internal network.`;
-            } else {
-                switch (action) {
-                    case 'scan':
-                        if (!player.scannedNodes.includes(nodeId)) {
-                            player.scannedNodes.push(nodeId);
-                            nodes.update({ id: nodeId, label: node.originalLabel });
-                            player.points += 5; // Award 5 points for scan
-                            message = `Scanning ${node.originalLabel}... Found services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}. (+5 points)`;
-                            addToLog(`Earned 5 points for scanning ${node.originalLabel}. Total points: ${player.points}`);
-                        } else {
-                            message = `${node.originalLabel} has already been scanned. Services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}.`;
-                        }
-                        break;
-                    case 'exploit':
-                        if (!player.scannedNodes.includes(nodeId)) {
-                            message = `Cannot exploit ${node.originalLabel || 'this node'}. You must scan it first.`;
-                        } else if (!node.exploitable) {
-                            message = `${node.originalLabel} cannot be exploited.`;
-                        } else if (node.compromised) {
-                            message = `${node.originalLabel} is already compromised.`;
-                        } else if (node.required_tool && !player.tools.includes(node.required_tool)) {
-                            message = `Cannot exploit ${node.originalLabel}. Missing required tool: ${node.required_tool}. Try exploiting other nodes to obtain it.`;
-                        } else {
-                            node.compromised = true;
-                            player.compromisedNodes.push(nodeId);
-                            // Set orange color for Domain Controllers, red for others
-                            const exploitColor = (nodeId === 6 || nodeId === 7) ? 
-                                { background: '#ff9900', border: '#cc6600' } : 
-                                { background: '#ff0000', border: '#cc0000' };
-                            nodes.update({ id: nodeId, color: exploitColor });
-                            // Award points: 50 for Hypervisor, 10 for others
-                            const pointsAwarded = nodeId === 17 ? 50 : 10;
-                            player.points += pointsAwarded;
-                            if (node.contains_tools.length > 0) {
-                                player.tools = player.tools.concat(node.contains_tools);
-                                message = `Exploited ${node.originalLabel}! Gained: ${node.contains_tools.join(', ')}. (+${pointsAwarded} points)`;
-                            } else {
-                                message = `Exploited ${node.originalLabel}! Node compromised. (+${pointsAwarded} points)`;
-                            }
-                            addToLog(`Earned ${pointsAwarded} points for exploiting ${node.originalLabel}. Total points: ${player.points}`);
-                            if (nodeId === 4) {
-                                nodes.update({ id: 5, hidden: false });
-                                edges.update([
-                                    { id: '2-5', hidden: false },
-                                    { id: '3-5', hidden: false },
-                                    { id: '4-5', hidden: false }
-                                ]);
-                                player.reachableNodes.push(5);
-                                addToLog('Firewall discovered! It can now be attacked after scanning.');
-                            } else if (nodeId === 5) {
-                                nodes.update([
-                                    { id: 6, hidden: false },
-                                    { id: 7, hidden: false },
-                                    { id: 8, hidden: false },
-                                    { id: 9, hidden: false },
-                                    { id: 10, hidden: false },
-                                    { id: 11, hidden: false },
-                                    { id: 12, hidden: false },
-                                    { id: 13, hidden: false },
-                                    { id: 14, hidden: false },
-                                    { id: 15, hidden: false },
-                                    { id: 17, hidden: false } // Reveal Hypervisor
-                                ]);
-                                edges.update([
-                                    { id: '5-6', hidden: false },
-                                    { id: '5-7', hidden: false },
-                                    { id: '5-8', hidden: false },
-                                    { id: '5-9', hidden: false },
-                                    { id: '5-11', hidden: false },
-                                    { id: '5-12', hidden: false },
-                                    { id: '5-13', hidden: false },
-                                    { id: '5-14', hidden: false },
-                                    { id: '5-15', hidden: false },
-                                    { id: '9-10', hidden: false },
-                                    { id: '14-17', hidden: false } // Reveal IT Admin to Hypervisor edge
-                                ]);
-                                addToLog('Firewall compromised! Internal network discovered, including Hypervisor, accessible after scanning.');
-                            } else if (nodeId === 15) {
-                                nodes.update({ id: 18, hidden: false }); // Reveal Backup Data
-                                edges.update({ id: '15-18', hidden: false }); // Reveal Backup Server to Backup Data edge
-                                player.reachableNodes.push(18);
-                                addToLog('Backup Data discovered! It can now be attacked after scanning.');
-                            } else if (nodeId === 8) {
-                                const timeTaken = (Date.now() - player.startTime) / 1000;
-                                const score = calculateScore(timeTaken);
-                                message = `File Server compromised! Mission accomplished. (+${pointsAwarded} points)`;
-                                showWinModal(timeTaken, score, player.points);
-                            }
-                            updateReachableNodes(nodeId);
-                        }
-                        break;
-                    case 'privesc':
-                        if (nodeId !== 6 && nodeId !== 7) {
-                            message = `Privilege escalation is only applicable to Domain Controllers.`;
-                        } else if (!node.compromised) {
-                            message = `Cannot perform privilege escalation on ${node.originalLabel}. Exploit it first.`;
-                        } else if (node.privescDone) {
-                            message = `Privilege escalation already performed on ${node.originalLabel}.`;
-                        } else {
-                            node.privescDone = true;
-                            player.points += 5; // Award 5 points for privesc
-                            message = `Privilege escalation successful on ${node.originalLabel}! (+5 points)`;
-                            addToLog(`Earned 5 points for privilege escalation on ${node.originalLabel}. Total points: ${player.points}`);
-                        }
-                        break;
-                    case 'pwn':
-                        if (nodeId !== 6 && nodeId !== 7) {
-                            message = `PWN is only applicable to Domain Controllers.`;
-                        } else if (!node.privescDone) {
-                            message = `Cannot PWN ${node.originalLabel}. Perform privilege escalation first.`;
-                        } else if (node.pwned) {
-                            message = `${node.originalLabel} is already fully compromised (pwned).`;
-                        } else {
-                            node.pwned = true;
-                            nodes.update({ id: nodeId, color: { background: '#ff0000', border: '#cc0000' } }); // Set red color on PWN
-                            message = `PWNed ${node.originalLabel}! Domain Controller fully compromised.`;
-                            addToLog(`Domain Controller ${node.originalLabel} fully compromised (pwned).`);
-                        }
-                        break;
-                    case 'delete':
-                        if (nodeId !== 18) {
-                            message = `Delete is only applicable to Backup Data.`;
-                        } else if (!player.scannedNodes.includes(nodeId)) {
-                            message = `Cannot delete ${node.originalLabel}. You must scan it first.`;
-                        } else if (node.deleted) {
-                            message = `${node.originalLabel} has already been deleted.`;
-                        } else {
-                            node.deleted = true;
-                            nodes.update({ id: nodeId, color: { background: '#ff0000', border: '#cc0000' } }); // Set red color on delete
-                            player.points += 150; // Award 150 points for delete
-                            message = `Deleted ${node.originalLabel}! Backup data destroyed. (+150 points)`;
-                            addToLog(`Earned 150 points for deleting ${node.originalLabel}. Total points: ${player.points}`);
-                        }
-                        break;
+    if (!isReachable(nodeId) && action !== 'scan') {
+        message = `You cannot interact with this node. Compromise more nodes to expand your reach.`;
+    } else if (node.group === 'internal' && !player.compromisedNodes.includes(5) && action !== 'scan') {
+        message = `Cannot perform ${action} on this node. Compromise the Firewall to access the internal network.`;
+    } else {
+        switch (action) {
+            case 'scan':
+                if (!player.scannedNodes.includes(nodeId)) {
+                    player.scannedNodes.push(nodeId);
+                    nodes.update({ id: nodeId, label: node.originalLabel });
+                    player.points += 5; // Award 5 points for scan
+                    message = `Scanning ${node.originalLabel}... Found services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}. (+5 points)`;
+                    addToLog(`Earned 5 points for scanning ${node.originalLabel}. Total points: ${player.points}`);
+                } else {
+                    message = `${node.originalLabel} has already been scanned. Services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}.`;
                 }
-            }
-
-            addToLog(message);
-            closeMenu();
+                break;
+            case 'exploit':
+                if (!player.scannedNodes.includes(nodeId)) {
+                    message = `Cannot exploit ${node.originalLabel || 'this node'}. You must scan it first.`;
+                } else if (nodeId === 16) {
+                    message = `Cannot exploit ${node.originalLabel} with standard methods. Use social engineering (right-click).`;
+                } else if (!node.exploitable) {
+                    message = `${node.originalLabel} cannot be exploited.`;
+                } else if (node.compromised) {
+                    message = `${node.originalLabel} is already compromised.`;
+                } else if (node.required_tool && !player.tools.includes(node.required_tool)) {
+                    message = `Cannot exploit ${node.originalLabel}. Missing required tool: ${node.required_tool}. Try exploiting other nodes to obtain it.`;
+                } else {
+                    node.compromised = true;
+                    player.compromisedNodes.push(nodeId);
+                    const exploitColor = (nodeId === 6 || nodeId === 7) ? 
+                        { background: '#ff9900', border: '#cc6600' } : 
+                        { background: '#ff0000', border: '#cc0000' };
+                    nodes.update({ id: nodeId, color: exploitColor });
+                    const pointsAwarded = nodeId === 17 ? 50 : 10;
+                    player.points += pointsAwarded;
+                    if (node.contains_tools.length > 0) {
+                        player.tools = player.tools.concat(node.contains_tools);
+                        message = `Exploited ${node.originalLabel}! Gained: ${node.contains_tools.join(', ')}. (+${pointsAwarded} points)`;
+                    } else {
+                        message = `Exploited ${node.originalLabel}! Node compromised. (+${pointsAwarded} points)`;
+                    }
+                    addToLog(`Earned ${pointsAwarded} points for exploiting ${node.originalLabel}. Total points: ${player.points}`);
+                    if (nodeId === 4) {
+                        nodes.update({ id: 5, hidden: false });
+                        edges.update([
+                            { id: '2-5', hidden: false },
+                            { id: '3-5', hidden: false },
+                            { id: '4-5', hidden: false }
+                        ]);
+                        player.reachableNodes.push(5);
+                        addToLog('Firewall discovered! It can now be attacked after scanning.');
+                    } else if (nodeId === 5) {
+                        nodes.update([
+                            { id: 6, hidden: false },
+                            { id: 7, hidden: false },
+                            { id: 8, hidden: false },
+                            { id: 9, hidden: false },
+                            { id: 10, hidden: false },
+                            { id: 11, hidden: false },
+                            { id: 12, hidden: false },
+                            { id: 13, hidden: false },
+                            { id: 14, hidden: false },
+                            { id: 15, hidden: false },
+                            { id: 17, hidden: false } // Reveal Hypervisor
+                        ]);
+                        edges.update([
+                            { id: '5-6', hidden: false },
+                            { id: '5-7', hidden: false },
+                            { id: '5-8', hidden: false },
+                            { id: '5-9', hidden: false },
+                            { id: '5-11', hidden: false },
+                            { id: '5-12', hidden: false },
+                            { id: '5-13', hidden: false },
+                            { id: '5-14', hidden: false },
+                            { id: '5-15', hidden: false },
+                            { id: '9-10', hidden: false },
+                            { id: '14-17', hidden: false } // Reveal IT Admin to Hypervisor edge
+                        ]);
+                        addToLog('Firewall compromised! Internal network discovered, including Hypervisor, accessible after scanning.');
+                    } else if (nodeId === 15) {
+                        nodes.update({ id: 18, hidden: false }); // Reveal Backup Data
+                        edges.update({ id: '15-18', hidden: false }); // Reveal Backup Server to Backup Data edge
+                        player.reachableNodes.push(18);
+                        addToLog('Backup Data discovered! It can now be attacked after scanning.');
+                    } else if (nodeId === 8) {
+                        const timeTaken = (Date.now() - player.startTime) / 1000;
+                        const score = calculateScore(timeTaken);
+                        message = `File Server compromised! Mission accomplished. (+${pointsAwarded} points)`;
+                        showWinModal(timeTaken, score, player.points);
+                    }
+                    updateReachableNodes(nodeId);
+                }
+                break;
+            case 'privesc':
+                if (nodeId !== 6 && nodeId !== 7) {
+                    message = `Privilege escalation is only applicable to Domain Controllers.`;
+                } else if (!node.compromised) {
+                    message = `Cannot perform privilege escalation on ${node.originalLabel}. Exploit it first.`;
+                } else if (node.privescDone) {
+                    message = `Privilege escalation already performed on ${node.originalLabel}.`;
+                } else {
+                    node.privescDone = true;
+                    player.points += 5; // Award 5 points for privesc
+                    message = `Privilege escalation successful on ${node.originalLabel}! (+5 points)`;
+                    addToLog(`Earned 5 points for privilege escalation on ${node.originalLabel}. Total points: ${player.points}`);
+                }
+                break;
+            case 'pwn':
+                if (nodeId !== 6 && nodeId !== 7) {
+                    message = `PWN is only applicable to Domain Controllers.`;
+                } else if (!node.privescDone) {
+                    message = `Cannot PWN ${node.originalLabel}. Perform privilege escalation first.`;
+                } else if (node.pwned) {
+                    message = `${node.originalLabel} is already fully compromised (pwned).`;
+                } else {
+                    node.pwned = true;
+                    nodes.update({ id: nodeId, color: { background: '#ff0000', border: '#cc0000' } }); // Set red color on PWN
+                    message = `PWNed ${node.originalLabel}! Domain Controller fully compromised.`;
+                    addToLog(`Domain Controller ${node.originalLabel} fully compromised (pwned).`);
+                }
+                break;
+            case 'delete':
+                if (nodeId !== 18) {
+                    message = `Delete is only applicable to Backup Data.`;
+                } else if (!player.scannedNodes.includes(nodeId)) {
+                    message = `Cannot delete ${node.originalLabel}. You must scan it first.`;
+                } else if (node.deleted) {
+                    message = `${node.originalLabel} has already been deleted.`;
+                } else {
+                    node.deleted = true;
+                    nodes.update({ id: nodeId, color: { background: '#ff0000', border: '#cc0000' } }); // Set red color on delete
+                    player.points += 150; // Award 150 points for delete
+                    message = `Deleted ${node.originalLabel}! Backup data destroyed. (+150 points)`;
+                    addToLog(`Earned 150 points for deleting ${node.originalLabel}. Total points: ${player.points}`);
+                }
+                break;
         }
+    }
+
+    addToLog(message);
+    closeMenu();
+}
 
         // Perform social engineering exploit
         function performSocialEngineeringExploit() {
@@ -939,6 +980,21 @@
             addToLog(message);
             closeSocialEngineeringMenu();
         }
+
+
+        function simulateCanvasClick() {
+    const canvas = document.querySelector('#mynetwork canvas');
+    if (!canvas) {
+        console.error('Canvas element not found.');
+        return;
+    }
+
+
+
+    // Dispatch the event to the canvas
+    canvas.dispatchEvent(clickEvent);
+    console.log('Simulated click on canvas at (10, 10).');
+}
     </script>
 </body>
 </html>
