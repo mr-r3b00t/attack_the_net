@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -88,7 +49,7 @@
             font-size: 1rem;
             line-height: 1.5;
         }
-        #menu {
+        #menu, #social-engineering-menu {
             position: fixed;
             background: #333;
             padding: 1rem;
@@ -96,7 +57,7 @@
             display: none;
             z-index: 1000;
         }
-        #menu button {
+        #menu button, #social-engineering-menu button {
             display: block;
             margin: 0.5rem 0;
             background: #444;
@@ -108,13 +69,12 @@
             width: 100%;
             text-align: left;
         }
-        #menu button:hover {
+        #menu button:hover, #social-engineering-menu button:hover {
             background: #555;
         }
         #menu button.hidden {
             display: none;
         }
-        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -164,13 +124,13 @@
             background: #555;
         }
         .modal-content .tweet-button {
-            background: #1DA1F2; /* Twitter blue */
+            background: #1DA1F2;
         }
         .modal-content .tweet-button:hover {
             background: #1991DB;
         }
         .modal-content .start-button {
-            background: #66ff66; /* Green to match theme */
+            background: #66ff66;
         }
         .modal-content .start-button:hover {
             background: #55cc55;
@@ -215,7 +175,14 @@
     <div id="menu">
         <button onclick="performAction('scan')" aria-label="Scan node for services">Scan</button>
         <button id="exploit-button" class="hidden" onclick="performAction('exploit')" aria-label="Exploit node to compromise it">Exploit</button>
+        <button id="privesc-button" class="hidden" onclick="performAction('privesc')" aria-label="Perform privilege escalation on Domain Controller">Privesc</button>
+        <button id="pwn-button" class="hidden" onclick="performAction('pwn')" aria-label="PWN Domain Controller">PWN</button>
+        <button id="delete-button" class="hidden" onclick="performAction('delete')" aria-label="Delete Backup Data">Delete</button>
         <button onclick="closeMenu()" aria-label="Close action menu">Close</button>
+    </div>
+    <div id="social-engineering-menu">
+        <button onclick="performSocialEngineeringExploit()" aria-label="Exploit node with social engineering">Exploit with Social Engineering</button>
+        <button onclick="closeSocialEngineeringMenu()" aria-label="Close social engineering menu">Close</button>
     </div>
     <div id="intro-modal" class="modal" style="display: flex;">
         <div class="modal-content">
@@ -228,7 +195,8 @@
             <h2>Mission Success</h2>
             <p>Game Over</p>
             <p id="time-taken">Time Taken: --:--</p>
-            <p id="score">Score: 0</p>
+            <p id="score">Time-Based Score: 0</p>
+            <p id="points">Points: 0</p>
             <div class="button-container">
                 <button onclick="restartGame()">Restart</button>
                 <button class="tweet-button" id="tweet-button">Tweet Score</button>
@@ -236,15 +204,46 @@
         </div>
     </div>
     <script>
-        // Define nodes with services, vulnerabilities, and tools
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+            return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+            if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+                try {
+                    var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                    var firstSheetName = workbook.SheetNames[0];
+                    var worksheet = workbook.Sheets[firstSheetName];
+                    var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                    var filteredData = jsonData.filter(row => row.some(filledCell));
+                    var headerRowIndex = filteredData.findIndex((row, index) =>
+                        row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                    );
+                    if (headerRowIndex === -1 || headerRowIndex > 25) {
+                        headerRowIndex = 0;
+                    }
+                    var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+                    csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                    return csv;
+                } catch (e) {
+                    console.error(e);
+                    return "";
+                }
+            }
+            return gk_fileData[filename] || "";
+        }
+
+        // Define nodes
         var nodes = new vis.DataSet([
             { id: 1, label: 'Internet', originalLabel: 'Internet', group: 'internet', compromised: true, contains_tools: ['Web Exploit'], exploitable: false },
             { id: 2, label: '', originalLabel: 'Web Server', group: 'dmz', services: ['HTTP'], required_tool: 'Web Exploit', contains_tools: ['Email Credential'], exploitable: true },
             { id: 3, label: '', originalLabel: 'Email Server', group: 'dmz', services: ['SMTP'], required_tool: 'Email Credential', contains_tools: ['VPN Credential'], exploitable: true },
             { id: 4, label: '', originalLabel: 'VPN Server', group: 'dmz', services: ['VPN'], required_tool: 'VPN Credential', contains_tools: ['HR Credential', 'Firewall Exploit'], exploitable: true },
             { id: 5, label: '', originalLabel: 'Firewall', group: 'firewall', services: [], required_tool: 'Firewall Exploit', contains_tools: [], exploitable: true, hidden: true },
-            { id: 6, label: '', originalLabel: 'Domain Controller 1', group: 'internal', services: ['RDP'], required_tool: 'DC Credential', contains_tools: [], exploitable: true, hidden: true },
-            { id: 7, label: '', originalLabel: 'Domain Controller 2', group: 'internal', services: ['RDP'], required_tool: 'DC Credential', contains_tools: [], exploitable: true, hidden: true },
+            { id: 6, label: '', originalLabel: 'Domain Controller 1', group: 'internal', services: ['RDP'], required_tool: 'DC Credential', contains_tools: [], exploitable: true, hidden: true, privescDone: false, pwned: false },
+            { id: 7, label: '', originalLabel: 'Domain Controller 2', group: 'internal', services: ['RDP'], required_tool: 'DC Credential', contains_tools: [], exploitable: true, hidden: true, privescDone: false, pwned: false },
             { id: 8, label: '', originalLabel: 'File Server', group: 'internal', services: [], required_tool: 'User Credential', contains_tools: [], exploitable: true, hidden: true },
             { id: 9, label: '', originalLabel: 'HR Web Server', group: 'internal', services: ['HTTP', 'RDP'], required_tool: 'HR Credential', contains_tools: ['DB Credential'], exploitable: true, hidden: true },
             { id: 10, label: '', originalLabel: 'HR Database Server', group: 'internal', services: [], required_tool: 'DB Credential', contains_tools: ['User Credential'], exploitable: true, hidden: true },
@@ -252,7 +251,10 @@
             { id: 12, label: '', originalLabel: 'CRM', group: 'internal', services: ['HTTP'], required_tool: 'DC Credential', contains_tools: [], exploitable: true, hidden: true },
             { id: 13, label: '', originalLabel: 'Workstation', group: 'internal', services: ['RDP'], required_tool: 'VPN Credential', contains_tools: ['Admin Credential'], exploitable: true, hidden: true },
             { id: 14, label: '', originalLabel: 'IT Admin Machine', group: 'internal', services: ['RDP'], required_tool: 'Admin Credential', contains_tools: ['DC Credential'], exploitable: true, hidden: true },
-            { id: 15, label: '', originalLabel: 'Backup Server', group: 'internal', services: [], required_tool: 'DC Credential', contains_tools: [], exploitable: true, hidden: true }
+            { id: 15, label: '', originalLabel: 'Backup Server', group: 'internal', services: [], required_tool: 'DC Credential', contains_tools: [], exploitable: true, hidden: true },
+            { id: 16, label: '', originalLabel: 'Helpdesk', group: 'dmz', services: ['Web'], required_tool: null, contains_tools: ['VPN Credential'], exploitable: true },
+            { id: 17, label: '', originalLabel: 'Hypervisor', group: 'internal', services: ['VMware API'], required_tool: 'Admin Credential', contains_tools: [], exploitable: true, hidden: true },
+            { id: 18, label: '', originalLabel: 'Backup Data', group: 'internal', services: [], required_tool: null, contains_tools: [], exploitable: false, hidden: true, deleted: false }
         ]);
 
         // Define edges
@@ -260,6 +262,7 @@
             { id: '1-2', from: 1, to: 2 },
             { id: '1-3', from: 1, to: 3 },
             { id: '1-4', from: 1, to: 4 },
+            { id: '1-16', from: 1, to: 16 }, // Internet to Helpdesk
             { id: '2-5', from: 2, to: 5, hidden: true },
             { id: '3-5', from: 3, to: 5, hidden: true },
             { id: '4-5', from: 4, to: 5, hidden: true },
@@ -271,8 +274,10 @@
             { id: '5-12', from: 5, to: 12, hidden: true },
             { id: '5-13', from: 5, to: 13, hidden: true },
             { id: '5-14', from: 5, to: 14, hidden: true },
-            { id: '5-15', from: 5, to: 15, hidden: true }, // Backup Server connected to Firewall
-            { id: '9-10', from: 9, to: 10, hidden: true } // HR Database Server only connected to HR Web Server
+            { id: '5-15', from: 5, to: 15, hidden: true },
+            { id: '9-10', from: 9, to: 10, hidden: true },
+            { id: '14-17', from: 14, to: 17, hidden: true }, // IT Admin Machine to Hypervisor
+            { id: '15-18', from: 15, to: 18, hidden: true } // Backup Server to Backup Data
         ]);
 
         // Initialize network
@@ -295,12 +300,12 @@
                 color: { color: '#ccc' },
                 width: 1
             },
-            interaction: { 
+            interaction: {
                 hover: true,
                 zoomView: true,
                 dragView: true
             },
-            physics: { 
+            physics: {
                 enabled: true,
                 stabilization: { iterations: 50 },
                 barnesHut: {
@@ -313,16 +318,17 @@
             }
         };
         var network = new vis.Network(container, data, options);
-        network.fit(); // Fit network to container on load
+        network.fit();
 
         // Player state
         var player = {
-            position: 1, // Start at Internet (unused but retained)
-            tools: ['Web Exploit'], // Initialize with Internet's tools
-            compromisedNodes: [1], // Internet is compromised
-            reachableNodes: [2, 3, 4], // Initially can reach Web Server, Email Server, VPN Server
-            scannedNodes: [], // Track scanned nodes
-            startTime: null // Set when START button is clicked
+            position: 1,
+            tools: ['Web Exploit'],
+            compromisedNodes: [1],
+            reachableNodes: [2, 3, 4, 16], // Include Helpdesk
+            scannedNodes: [],
+            startTime: null,
+            points: 0 // Track points
         };
 
         // Log function
@@ -341,34 +347,35 @@
             return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         }
 
-        // Calculate score based on time taken
+        // Calculate time-based score
         function calculateScore(timeTaken) {
             const maxScore = 100000;
             const score = Math.max(0, maxScore - timeTaken);
             return Math.floor(score);
         }
 
-        // Start game (hide intro modal and set start time)
+        // Start game
         function startGame() {
             var introModal = document.getElementById('intro-modal');
             introModal.style.display = 'none';
             player.startTime = Date.now();
-            // Add initial log messages after starting
             addToLog('Game started. You are on the Internet. Objective: Compromise the File Server.');
             addToLog(`Initial tools: ${player.tools.join(', ') || 'None'}.`);
-            addToLog(`Can initially attack: Node 2, Node 3, Node 4.`);
-            addToLog('Left-click a node to open the context menu. Scan nodes to reveal their identity and services, then exploit them. Start with Node 2, Node 3, and Node 4 to reveal and attack the Firewall. Compromise the Firewall to access the internal network, then exploit HR Web Server and HR Database Server to obtain User Credential, and finally compromise File Server to win.');
+            addToLog(`Can initially attack: Node 2, Node 3, Node 4, Node 16.`);
+            addToLog('Left-click a node to open the context menu. Scan nodes to reveal their identity and services (5 points), then exploit them (10 points, 20 for Helpdesk, 50 for Hypervisor; Domain Controllers turn orange on exploit). For Domain Controllers (Nodes 6, 7), after exploiting, perform Privesc (5 points) and then PWN to fully compromise them (turns red). Compromise Backup Server (Node 15) to access Backup Data (Node 18), then Delete it (150 points, turns red). Right-click the Helpdesk (Node 16) for a social engineering exploit. Start with Node 2, Node 3, Node 4, or Node 16 to reveal and attack the Firewall. Compromise the Firewall to access the internal network, then exploit HR Web Server and HR Database Server to obtain User Credential, and finally compromise File Server to win.');
         }
 
         // Show win modal
-        function showWinModal(timeTaken, score) {
+        function showWinModal(timeTaken, score, points) {
             var modal = document.getElementById('win-modal');
             var timeDisplay = document.getElementById('time-taken');
             var scoreDisplay = document.getElementById('score');
+            var pointsDisplay = document.getElementById('points');
             var tweetButton = document.getElementById('tweet-button');
             timeDisplay.textContent = `Time Taken: ${formatTime(timeTaken)}`;
-            scoreDisplay.textContent = `Score: ${score.toLocaleString()}`;
-            const tweetText = `I attacked the net and won! my time was ${formatTime(timeTaken)} with ${score.toLocaleString()} points! play here: https://mr-r3b00t.github.io/attack_the_net/ #AttackTheNet #Hacking #game`;
+            scoreDisplay.textContent = `Time-Based Score: ${score.toLocaleString()}`;
+            pointsDisplay.textContent = `Action Points: ${points.toLocaleString()}`;
+            const tweetText = `I attacked the net and won! Time: ${formatTime(timeTaken)}, Time Score: ${score.toLocaleString()}, Action Points: ${points.toLocaleString()}! Play here: https://mr-r3b00t.github.io/attack_the_net/ #AttackTheNet #Hacking #game`;
             const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
             tweetButton.onclick = () => window.open(tweetUrl, '_blank');
             modal.style.display = 'flex';
@@ -379,7 +386,7 @@
             location.reload();
         }
 
-        // Flag to prevent immediate menu close
+        // Menu handling
         let isMenuOpening = false;
 
         // Handle node left-click
@@ -388,7 +395,7 @@
                 var nodeId = params.nodes[0];
                 if (nodeId === 1) {
                     console.log('Clicked Internet node; no menu displayed.');
-                    return; // Prevent menu for Internet node
+                    return;
                 }
                 var nodeLabel = nodes.get(nodeId).originalLabel;
                 console.log(`Left-clicked node ${nodeId}: ${nodeLabel}`);
@@ -396,30 +403,74 @@
             }
         });
 
-        // Close menu on click outside
+        // Handle node right-click
+        network.on('oncontext', function(params) {
+            params.event.preventDefault();
+            if (params.nodes.length > 0) {
+                var nodeId = params.nodes[0];
+                if (nodeId === 16) { // Helpdesk node
+                    console.log(`Right-clicked node ${nodeId}: Helpdesk`);
+                    showSocialEngineeringMenu(nodeId, params.event);
+                }
+            }
+        });
+
+        // Close menus on click outside
         document.addEventListener('click', function(event) {
             if (isMenuOpening) {
                 isMenuOpening = false;
                 return;
             }
             var menu = document.getElementById('menu');
+            var seMenu = document.getElementById('social-engineering-menu');
             if (menu.style.display === 'block' && !menu.contains(event.target)) {
                 console.log('Menu closed');
                 closeMenu();
             }
+            if (seMenu.style.display === 'block' && !seMenu.contains(event.target)) {
+                console.log('Social Engineering Menu closed');
+                closeSocialEngineeringMenu();
+            }
         });
 
-        // Show action menu in top left
+        // Show standard menu
         function showMenu(nodeId, event) {
             isMenuOpening = true;
             var menu = document.getElementById('menu');
             var exploitButton = document.getElementById('exploit-button');
-            // Show or hide Exploit button based on scan status
-            if (player.scannedNodes.includes(nodeId)) {
+            var privescButton = document.getElementById('privesc-button');
+            var pwnButton = document.getElementById('pwn-button');
+            var deleteButton = document.getElementById('delete-button');
+            var node = nodes.get(nodeId);
+
+            // Show Exploit button for scanned nodes (except if fully pwned for DCs or deleted for Backup Data)
+            if (player.scannedNodes.includes(nodeId) && !(node.pwned && (nodeId === 6 || nodeId === 7)) && !(node.deleted && nodeId === 18)) {
                 exploitButton.classList.remove('hidden');
             } else {
                 exploitButton.classList.add('hidden');
             }
+
+            // Show Privesc button for Domain Controllers that are compromised but not privescDone
+            if ((nodeId === 6 || nodeId === 7) && node.compromised && !node.privescDone) {
+                privescButton.classList.remove('hidden');
+            } else {
+                privescButton.classList.add('hidden');
+            }
+
+            // Show PWN button for Domain Controllers that have privescDone but not pwned
+            if ((nodeId === 6 || nodeId === 7) && node.privescDone && !node.pwned) {
+                pwnButton.classList.remove('hidden');
+            } else {
+                pwnButton.classList.add('hidden');
+            }
+
+            // Show Delete button for Backup Data that is scanned but not deleted
+            if (nodeId === 18 && player.scannedNodes.includes(nodeId) && !node.deleted) {
+                deleteButton.classList.remove('hidden');
+            } else {
+                deleteButton.classList.add('hidden');
+            }
+
             menu.style.left = '10px';
             menu.style.top = '10px';
             menu.style.display = 'block';
@@ -427,7 +478,18 @@
             console.log(`Menu shown for node ${nodeId}: ${nodes.get(nodeId).originalLabel}`);
         }
 
-        // Close menu
+        // Show social engineering menu
+        function showSocialEngineeringMenu(nodeId, event) {
+            isMenuOpening = true;
+            var menu = document.getElementById('social-engineering-menu');
+            menu.style.left = '10px';
+            menu.style.top = '50px'; // Offset to avoid overlap with standard menu
+            menu.style.display = 'block';
+            menu.dataset.nodeId = nodeId;
+            console.log(`Social Engineering Menu shown for node ${nodeId}: Helpdesk`);
+        }
+
+        // Close standard menu
         function closeMenu() {
             var menu = document.getElementById('menu');
             if (menu.style.display === 'block') {
@@ -436,20 +498,27 @@
             }
         }
 
-        // Update reachable nodes after exploiting a node
+        // Close social engineering menu
+        function closeSocialEngineeringMenu() {
+            var menu = document.getElementById('social-engineering-menu');
+            if (menu.style.display === 'block') {
+                console.log('Social Engineering Menu closed');
+                menu.style.display = 'none';
+            }
+        }
+
+        // Update reachable nodes
         function updateReachableNodes(newNodeId) {
-            var newReachable = edges.get().filter(edge => 
+            var newReachable = edges.get().filter(edge =>
                 edge.from === newNodeId || edge.to === newNodeId
-            ).map(edge => 
+            ).map(edge =>
                 edge.from === newNodeId ? edge.to : edge.from
             ).filter(id => {
                 var node = nodes.get(id);
-                // Only add internal nodes if Firewall is compromised
                 if (node.group === 'internal' && !player.compromisedNodes.includes(5)) {
                     return false;
                 }
-                // Exclude already compromised nodes and hidden nodes
-                return !player.compromisedNodes.includes(id) && !node.hidden;
+                return !player.compromisedNodes.includes(id) && !node.hidden && !(node.deleted && id === 18);
             });
             player.reachableNodes = [...new Set([...player.reachableNodes, ...newReachable])];
             var newNodeLabels = newReachable.map(id => nodes.get(id).originalLabel).join(', ');
@@ -463,12 +532,12 @@
             return player.reachableNodes.includes(nodeId) || player.compromisedNodes.includes(nodeId);
         }
 
-        // Check if a Domain Controller is compromised
+        // Check if a Domain Controller is fully compromised (pwned)
         function hasDomainControllerCompromised() {
-            return player.compromisedNodes.includes(6) || player.compromisedNodes.includes(7);
+            return (nodes.get(6).pwned || nodes.get(7).pwned);
         }
 
-        // Perform action
+        // Perform standard action
         function performAction(action) {
             var nodeId = parseInt(document.getElementById('menu').dataset.nodeId);
             var node = nodes.get(nodeId);
@@ -486,7 +555,9 @@
                         if (!player.scannedNodes.includes(nodeId)) {
                             player.scannedNodes.push(nodeId);
                             nodes.update({ id: nodeId, label: node.originalLabel });
-                            message = `Scanning ${node.originalLabel}... Found services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}.`;
+                            player.points += 5; // Award 5 points for scan
+                            message = `Scanning ${node.originalLabel}... Found services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}. (+5 points)`;
+                            addToLog(`Earned 5 points for scanning ${node.originalLabel}. Total points: ${player.points}`);
                         } else {
                             message = `${node.originalLabel} has already been scanned. Services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}.`;
                         }
@@ -503,15 +574,22 @@
                         } else {
                             node.compromised = true;
                             player.compromisedNodes.push(nodeId);
-                            nodes.update({ id: nodeId, color: { background: '#ff0000', border: '#cc0000' } });
+                            // Set orange color for Domain Controllers, red for others
+                            const exploitColor = (nodeId === 6 || nodeId === 7) ? 
+                                { background: '#ff9900', border: '#cc6600' } : 
+                                { background: '#ff0000', border: '#cc0000' };
+                            nodes.update({ id: nodeId, color: exploitColor });
+                            // Award points: 50 for Hypervisor, 10 for others
+                            const pointsAwarded = nodeId === 17 ? 50 : 10;
+                            player.points += pointsAwarded;
                             if (node.contains_tools.length > 0) {
                                 player.tools = player.tools.concat(node.contains_tools);
-                                message = `Exploited ${node.originalLabel}! Gained: ${node.contains_tools.join(', ')}.`;
+                                message = `Exploited ${node.originalLabel}! Gained: ${node.contains_tools.join(', ')}. (+${pointsAwarded} points)`;
                             } else {
-                                message = `Exploited ${node.originalLabel}! Node compromised.`;
+                                message = `Exploited ${node.originalLabel}! Node compromised. (+${pointsAwarded} points)`;
                             }
+                            addToLog(`Earned ${pointsAwarded} points for exploiting ${node.originalLabel}. Total points: ${player.points}`);
                             if (nodeId === 4) {
-                                // Reveal Firewall and its edges when VPN Server is compromised
                                 nodes.update({ id: 5, hidden: false });
                                 edges.update([
                                     { id: '2-5', hidden: false },
@@ -521,7 +599,6 @@
                                 player.reachableNodes.push(5);
                                 addToLog('Firewall discovered! It can now be attacked after scanning.');
                             } else if (nodeId === 5) {
-                                // Reveal internal nodes and their edges when Firewall is compromised
                                 nodes.update([
                                     { id: 6, hidden: false },
                                     { id: 7, hidden: false },
@@ -532,7 +609,8 @@
                                     { id: 12, hidden: false },
                                     { id: 13, hidden: false },
                                     { id: 14, hidden: false },
-                                    { id: 15, hidden: false }
+                                    { id: 15, hidden: false },
+                                    { id: 17, hidden: false } // Reveal Hypervisor
                                 ]);
                                 edges.update([
                                     { id: '5-6', hidden: false },
@@ -544,18 +622,65 @@
                                     { id: '5-13', hidden: false },
                                     { id: '5-14', hidden: false },
                                     { id: '5-15', hidden: false },
-                                    { id: '9-10', hidden: false }
+                                    { id: '9-10', hidden: false },
+                                    { id: '14-17', hidden: false } // Reveal IT Admin to Hypervisor edge
                                 ]);
-                                addToLog('Firewall compromised! Internal network discovered and accessible after scanning.');
-                            } else if (nodeId === 6 || nodeId === 7) {
-                                addToLog('Domain Controller compromised!');
+                                addToLog('Firewall compromised! Internal network discovered, including Hypervisor, accessible after scanning.');
+                            } else if (nodeId === 15) {
+                                nodes.update({ id: 18, hidden: false }); // Reveal Backup Data
+                                edges.update({ id: '15-18', hidden: false }); // Reveal Backup Server to Backup Data edge
+                                player.reachableNodes.push(18);
+                                addToLog('Backup Data discovered! It can now be attacked after scanning.');
                             } else if (nodeId === 8) {
-                                const timeTaken = (Date.now() - player.startTime) / 1000; // Time in seconds
+                                const timeTaken = (Date.now() - player.startTime) / 1000;
                                 const score = calculateScore(timeTaken);
-                                message = 'File Server compromised! Mission accomplished.';
-                                showWinModal(timeTaken, score);
+                                message = `File Server compromised! Mission accomplished. (+${pointsAwarded} points)`;
+                                showWinModal(timeTaken, score, player.points);
                             }
                             updateReachableNodes(nodeId);
+                        }
+                        break;
+                    case 'privesc':
+                        if (nodeId !== 6 && nodeId !== 7) {
+                            message = `Privilege escalation is only applicable to Domain Controllers.`;
+                        } else if (!node.compromised) {
+                            message = `Cannot perform privilege escalation on ${node.originalLabel}. Exploit it first.`;
+                        } else if (node.privescDone) {
+                            message = `Privilege escalation already performed on ${node.originalLabel}.`;
+                        } else {
+                            node.privescDone = true;
+                            player.points += 5; // Award 5 points for privesc
+                            message = `Privilege escalation successful on ${node.originalLabel}! (+5 points)`;
+                            addToLog(`Earned 5 points for privilege escalation on ${node.originalLabel}. Total points: ${player.points}`);
+                        }
+                        break;
+                    case 'pwn':
+                        if (nodeId !== 6 && nodeId !== 7) {
+                            message = `PWN is only applicable to Domain Controllers.`;
+                        } else if (!node.privescDone) {
+                            message = `Cannot PWN ${node.originalLabel}. Perform privilege escalation first.`;
+                        } else if (node.pwned) {
+                            message = `${node.originalLabel} is already fully compromised (pwned).`;
+                        } else {
+                            node.pwned = true;
+                            nodes.update({ id: nodeId, color: { background: '#ff0000', border: '#cc0000' } }); // Set red color on PWN
+                            message = `PWNed ${node.originalLabel}! Domain Controller fully compromised.`;
+                            addToLog(`Domain Controller ${node.originalLabel} fully compromised (pwned).`);
+                        }
+                        break;
+                    case 'delete':
+                        if (nodeId !== 18) {
+                            message = `Delete is only applicable to Backup Data.`;
+                        } else if (!player.scannedNodes.includes(nodeId)) {
+                            message = `Cannot delete ${node.originalLabel}. You must scan it first.`;
+                        } else if (node.deleted) {
+                            message = `${node.originalLabel} has already been deleted.`;
+                        } else {
+                            node.deleted = true;
+                            nodes.update({ id: nodeId, color: { background: '#ff0000', border: '#cc0000' } }); // Set red color on delete
+                            player.points += 150; // Award 150 points for delete
+                            message = `Deleted ${node.originalLabel}! Backup data destroyed. (+150 points)`;
+                            addToLog(`Earned 150 points for deleting ${node.originalLabel}. Total points: ${player.points}`);
                         }
                         break;
                 }
@@ -563,6 +688,39 @@
 
             addToLog(message);
             closeMenu();
+        }
+
+        // Perform social engineering exploit
+        function performSocialEngineeringExploit() {
+            var nodeId = parseInt(document.getElementById('social-engineering-menu').dataset.nodeId);
+            var node = nodes.get(nodeId);
+            var message = '';
+
+            console.log(`Social Engineering Exploit performed on node ${nodeId}: ${node.originalLabel}`);
+
+            if (!isReachable(nodeId)) {
+                message = `You cannot interact with this node. Compromise more nodes to expand your reach.`;
+            } else if (!player.scannedNodes.includes(nodeId)) {
+                message = `Cannot exploit ${node.originalLabel} with social engineering. You must scan it first.`;
+            } else if (node.compromised) {
+                message = `${node.originalLabel} is already compromised.`;
+            } else {
+                node.compromised = true;
+                player.compromisedNodes.push(nodeId);
+                nodes.update({ id: nodeId, color: { background: '#ff0000', border: '#cc0000' } });
+                player.points += 20; // Award 20 points for Helpdesk exploit
+                if (node.contains_tools.length > 0) {
+                    player.tools = player.tools.concat(node.contains_tools);
+                    message = `Social engineering exploit on ${node.originalLabel} succeeded! Gained: ${node.contains_tools.join(', ')}. (+20 points)`;
+                } else {
+                    message = `Social engineering exploit on ${node.originalLabel} succeeded! Node compromised. (+20 points)`;
+                }
+                addToLog(`Earned 20 points for social engineering exploit on ${node.originalLabel}. Total points: ${player.points}`);
+                updateReachableNodes(nodeId);
+            }
+
+            addToLog(message);
+            closeSocialEngineeringMenu();
         }
     </script>
 </body>
