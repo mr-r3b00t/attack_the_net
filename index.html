@@ -57,7 +57,7 @@
             display: none;
             z-index: 1000;
         }
-        #menu button, #social-engineering-menu button {
+        #menu button, #social-engineering-menu button, #controls button {
             display: block;
             margin: 0.5rem 0;
             background: #444;
@@ -69,11 +69,17 @@
             width: 100%;
             text-align: left;
         }
-        #menu button:hover, #social-engineering-menu button:hover {
+        #menu button:hover, #social-engineering-menu button:hover, #controls button:hover {
             background: #555;
         }
         #menu button.hidden {
             display: none;
+        }
+        #controls {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
         }
         .modal {
             display: none;
@@ -147,6 +153,10 @@
             #log {
                 max-height: 40vh;
             }
+            #controls {
+                top: 5px;
+                right: 5px;
+            }
             .modal-content {
                 padding: 1.5rem;
             }
@@ -171,6 +181,9 @@
             <h3>Action Log</h3>
             <div id="log-content"></div>
         </div>
+    </div>
+    <div id="controls">
+        <button onclick="togglePathfindingMode()" aria-label="Find path between two nodes">Find Path</button>
     </div>
     <div id="menu">
         <button onclick="performAction('scan')" aria-label="Scan node for services">Scan</button>
@@ -259,25 +272,25 @@
 
         // Define edges
         var edges = new vis.DataSet([
-            { id: '1-2', from: 1, to: 2 },
-            { id: '1-3', from: 1, to: 3 },
-            { id: '1-4', from: 1, to: 4 },
-            { id: '1-16', from: 1, to: 16 }, // Internet to Helpdesk
-            { id: '2-5', from: 2, to: 5, hidden: true },
-            { id: '3-5', from: 3, to: 5, hidden: true },
-            { id: '4-5', from: 4, to: 5, hidden: true },
-            { id: '5-6', from: 5, to: 6, hidden: true },
-            { id: '5-7', from: 5, to: 7, hidden: true },
-            { id: '5-8', from: 5, to: 8, hidden: true },
-            { id: '5-9', from: 5, to: 9, hidden: true },
-            { id: '5-11', from: 5, to: 11, hidden: true },
-            { id: '5-12', from: 5, to: 12, hidden: true },
-            { id: '5-13', from: 5, to: 13, hidden: true },
-            { id: '5-14', from: 5, to: 14, hidden: true },
-            { id: '5-15', from: 5, to: 15, hidden: true },
-            { id: '9-10', from: 9, to: 10, hidden: true },
-            { id: '14-17', from: 14, to: 17, hidden: true }, // IT Admin Machine to Hypervisor
-            { id: '15-18', from: 15, to: 18, hidden: true } // Backup Server to Backup Data
+            { id: '1-2', from: 1, to: 2, traversable: true },
+            { id: '1-3', from: 1, to: 3, traversable: true },
+            { id: '1-4', from: 1, to: 4, traversable: true },
+            { id: '1-16', from: 1, to: 16, traversable: true }, // Internet to Helpdesk
+            { id: '2-5', from: 2, to: 5, hidden: true, traversable: false }, // Non-traversable
+            { id: '3-5', from: 3, to: 5, hidden: true, traversable: false }, // Non-traversable
+            { id: '4-5', from: 4, to: 5, hidden: true, traversable: true },
+            { id: '5-6', from: 5, to: 6, hidden: true, traversable: true },
+            { id: '5-7', from: 5, to: 7, hidden: true, traversable: true },
+            { id: '5-8', from: 5, to: 8, hidden: true, traversable: true },
+            { id: '5-9', from: 5, to: 9, hidden: true, traversable: true },
+            { id: '5-11', from: 5, to: 11, hidden: true, traversable: true },
+            { id: '5-12', from: 5, to: 12, hidden: true, traversable: true },
+            { id: '5-13', from: 5, to: 13, hidden: true, traversable: true },
+            { id: '5-14', from: 5, to: 14, hidden: true, traversable: true },
+            { id: '5-15', from: 5, to: 15, hidden: true, traversable: true },
+            { id: '9-10', from: 9, to: 10, hidden: true, traversable: true },
+            { id: '14-17', from: 14, to: 17, hidden: true, traversable: true }, // IT Admin Machine to Hypervisor
+            { id: '15-18', from: 15, to: 18, hidden: true, traversable: true } // Backup Server to Backup Data
         ]);
 
         // Initialize network
@@ -328,7 +341,9 @@
             reachableNodes: [2, 3, 4, 16], // Include Helpdesk
             scannedNodes: [],
             startTime: null,
-            points: 0 // Track points
+            points: 0, // Track points
+            pathfindingMode: false, // Track pathfinding mode
+            selectedNodes: [] // Track selected nodes for pathfinding
         };
 
         // Log function
@@ -362,7 +377,7 @@
             addToLog('Game started. You are on the Internet. Objective: Compromise the File Server.');
             addToLog(`Initial tools: ${player.tools.join(', ') || 'None'}.`);
             addToLog(`Can initially attack: Node 2, Node 3, Node 4, Node 16.`);
-            addToLog('Left-click a node to open the context menu. Scan nodes to reveal their identity and services (5 points), then exploit them (10 points, 20 for Helpdesk, 50 for Hypervisor; Domain Controllers turn orange on exploit). For Domain Controllers (Nodes 6, 7), after exploiting, perform Privesc (5 points) and then PWN to fully compromise them (turns red). Compromise Backup Server (Node 15) to access Backup Data (Node 18), then Delete it (150 points, turns red). Right-click the Helpdesk (Node 16) for a social engineering exploit. Start with Node 2, Node 3, Node 4, or Node 16 to reveal and attack the Firewall. Compromise the Firewall to access the internal network, then exploit HR Web Server and HR Database Server to obtain User Credential, and finally compromise File Server to win.');
+            addToLog('Left-click a node to open the context menu. Scan nodes to reveal their identity and services (5 points), then exploit them (10 points, 20 for Helpdesk, 50 for Hypervisor; Domain Controllers turn orange on exploit). For Domain Controllers (Nodes 6, 7), after exploiting, perform Privesc (5 points) and then PWN to fully compromise them (turns red). Compromise Backup Server (Node 15) to access Backup Data (Node 18), then Delete it (150 points, turns red). Click "Find Path" to select two nodes and see the kill chain to reach one from the other (all path edges, including the last, turn red for 10 seconds; only VPN Server (Node 4) leads to Firewall (Node 5)). Right-click the Helpdesk (Node 16) for a social engineering exploit. Start with Node 2, Node 3, Node 4, or Node 16 to reveal and attack the Firewall via VPN Server. Compromise the Firewall to access the internal network, then exploit HR Web Server and HR Database Server to obtain User Credential, and finally compromise File Server to win.');
         }
 
         // Show win modal
@@ -386,20 +401,222 @@
             location.reload();
         }
 
+        // Pathfinding functions
+        function togglePathfindingMode() {
+            player.pathfindingMode = !player.pathfindingMode;
+            player.selectedNodes = [];
+            if (player.pathfindingMode) {
+                addToLog('Pathfinding mode activated. Click the start node, then the end node.');
+            } else {
+                addToLog('Pathfinding mode deactivated.');
+                resetEdgeColors();
+            }
+        }
+
+        function resetEdgeColors() {
+            edges.update(edges.get().map(edge => ({ id: edge.id, color: { color: '#ccc' } })));
+        }
+
+        function findPath(startId, endId) {
+            // Map tools to their source nodes
+            const toolSources = {
+                'Web Exploit': 1, // Internet
+                'Email Credential': 2, // Web Server
+                'VPN Credential': [3, 16], // Email Server, Helpdesk
+                'HR Credential': 4, // VPN Server
+                'Firewall Exploit': 4, // VPN Server
+                'Admin Credential': 13, // Workstation
+                'DC Credential': 14, // IT Admin Machine
+                'DB Credential': 9, // HR Web Server
+                'User Credential': 10 // HR Database Server
+            };
+
+            // BFS with credential dependency tracking
+            const queue = [{ path: [startId], tools: [...player.tools] }];
+            const visited = new Set();
+            while (queue.length > 0) {
+                const { path, tools } = queue.shift();
+                const nodeId = path[path.length - 1];
+                if (nodeId === endId) {
+                    return path;
+                }
+                const stateKey = `${nodeId}:${tools.sort().join(',')}`;
+                if (!visited.has(stateKey)) {
+                    visited.add(stateKey);
+                    const node = nodes.get(nodeId);
+                    const neighbors = edges.get().filter(edge => 
+                        !edge.hidden && 
+                        edge.traversable !== false && // Only use traversable edges
+                        (edge.from === nodeId || edge.to === nodeId)
+                    ).map(edge => edge.from === nodeId ? edge.to : edge.from)
+                    .filter(id => {
+                        const neighbor = nodes.get(id);
+                        // Only visit neighbors if we have or can obtain their required tool
+                        if (!neighbor.required_tool) return true;
+                        if (tools.includes(neighbor.required_tool)) return true;
+                        const sourceId = toolSources[neighbor.required_tool];
+                        if (Array.isArray(sourceId)) {
+                            return sourceId.some(sid => path.includes(sid));
+                        }
+                        return sourceId && path.includes(sourceId);
+                    });
+                    for (const neighbor of neighbors) {
+                        const neighborNode = nodes.get(neighbor);
+                        let newTools = [...tools];
+                        if (neighborNode.contains_tools && neighborNode.contains_tools.length > 0) {
+                            newTools = [...newTools, ...neighborNode.contains_tools];
+                        }
+                        // Ensure Workstation is included before IT Admin Machine or Hypervisor
+                        if (neighbor === 14 || neighbor === 17) { // IT Admin Machine or Hypervisor
+                            if (!path.includes(13) && !tools.includes('Admin Credential')) {
+                                // Force inclusion of Workstation (Node 13) if not already in path
+                                const workstationPath = [...path, 13];
+                                queue.push({ path: workstationPath, tools: [...newTools, 'Admin Credential'] });
+                                continue;
+                            }
+                        }
+                        queue.push({ path: [...path, neighbor], tools: newTools });
+                    }
+                }
+            }
+            return null; // No path found
+        }
+
+        function getRequiredSteps(path) {
+            const steps = [];
+            const toolsNeeded = new Set();
+            let currentTools = [...player.tools];
+
+            for (let i = 0; i < path.length; i++) {
+                const nodeId = path[i];
+                const node = nodes.get(nodeId);
+                const nodeSteps = [];
+
+                // Skip Internet node (already compromised)
+                if (nodeId === 1) continue;
+
+                // Scan step
+                if (!player.scannedNodes.includes(nodeId)) {
+                    nodeSteps.push(`Scan ${node.originalLabel} to reveal services (5 points).`);
+                }
+
+                // Exploit step
+                if (node.exploitable && !node.compromised) {
+                    if (nodeId === 16) {
+                        // Helpdesk uses social engineering
+                        nodeSteps.push(`Exploit ${node.originalLabel} with social engineering (20 points).`);
+                        if (node.contains_tools.length > 0) {
+                            currentTools = [...currentTools, ...node.contains_tools];
+                        }
+                    } else if (node.required_tool && !currentTools.includes(node.required_tool)) {
+                        nodeSteps.push(`Cannot exploit ${node.originalLabel}: Missing required tool ${node.required_tool}.`);
+                        toolsNeeded.add(node.required_tool);
+                    } else {
+                        nodeSteps.push(`Exploit ${node.originalLabel} (${nodeId === 17 ? 50 : 10} points).`);
+                        if (node.contains_tools.length > 0) {
+                            currentTools = [...currentTools, ...node.contains_tools];
+                        }
+                    }
+                }
+
+                // Privesc and PWN for Domain Controllers
+                if ((nodeId === 6 || nodeId === 7) && node.compromised && !node.pwned) {
+                    if (!node.privescDone) {
+                        nodeSteps.push(`Perform privilege escalation on ${node.originalLabel} (5 points).`);
+                    }
+                    if (!node.pwned) {
+                        nodeSteps.push(`PWN ${node.originalLabel} to fully compromise it.`);
+                    }
+                }
+
+                // Delete for Backup Data
+                if (nodeId === 18 && !node.deleted) {
+                    nodeSteps.push(`Delete ${node.originalLabel} (150 points).`);
+                }
+
+                if (nodeSteps.length > 0) {
+                    steps.push(`Node ${nodeId} (${node.originalLabel}):`);
+                    steps.push(...nodeSteps.map(step => `  - ${step}`));
+                }
+            }
+
+            // Add tool acquisition steps if needed
+            if (toolsNeeded.size > 0) {
+                steps.unshift('Required tools not currently available:');
+                for (const tool of toolsNeeded) {
+                    const toolSource = nodes.get().find(n => n.contains_tools && n.contains_tools.includes(tool));
+                    if (toolSource) {
+                        steps.push(`  - Obtain ${tool} by exploiting ${toolSource.originalLabel} (Node ${toolSource.id}).`);
+                    } else {
+                        steps.push(`  - ${tool} (source unknown).`);
+                    }
+                }
+            }
+
+            return steps;
+        }
+
+        // Highlight path edges
+        function highlightPath(path) {
+            resetEdgeColors();
+            const pathEdges = [];
+            for (let i = 0; i < path.length - 1; i++) {
+                const from = path[i];
+                const to = path[i + 1];
+                const edge = edges.get().find(e => 
+                    !e.hidden && 
+                    ((e.from === from && e.to === to) || (e.from === to && e.to === from))
+                );
+                if (edge) {
+                    pathEdges.push({ id: edge.id, color: { color: '#ff0000' } }); // Red color
+                }
+            }
+            edges.update(pathEdges);
+            setTimeout(resetEdgeColors, 10000); // Revert after 10 seconds
+        }
+
         // Menu handling
         let isMenuOpening = false;
 
         // Handle node left-click
         network.on('click', function(params) {
             if (params.nodes.length > 0) {
-                var nodeId = params.nodes[0];
-                if (nodeId === 1) {
-                    console.log('Clicked Internet node; no menu displayed.');
-                    return;
-                }
-                var nodeLabel = nodes.get(nodeId).originalLabel;
+                const nodeId = params.nodes[0];
+                const nodeLabel = nodes.get(nodeId).originalLabel;
                 console.log(`Left-clicked node ${nodeId}: ${nodeLabel}`);
-                showMenu(nodeId, params.event);
+
+                if (player.pathfindingMode) {
+                    player.selectedNodes.push(nodeId);
+                    addToLog(`Selected node ${nodeId} (${nodeLabel}) for pathfinding.`);
+                    if (player.selectedNodes.length === 2) {
+                        const [startId, endId] = player.selectedNodes;
+                        const path = findPath(startId, endId);
+                        if (path) {
+                            const startLabel = nodes.get(startId).originalLabel;
+                            const endLabel = nodes.get(endId).originalLabel;
+                            addToLog(`Path from ${startLabel} (Node ${startId}) to ${endLabel} (Node ${endId}): ${path.map(id => nodes.get(id).originalLabel).join(' -> ')}`);
+                            const steps = getRequiredSteps(path);
+                            if (steps.length > 0) {
+                                addToLog('Required steps:');
+                                steps.forEach(step => addToLog(step));
+                            } else {
+                                addToLog('No additional steps required (all nodes already compromised or accessible).');
+                            }
+                            highlightPath(path);
+                        } else {
+                            addToLog(`No valid path found from ${nodes.get(startId).originalLabel} (Node ${startId}) to ${nodes.get(endId).originalLabel} (Node ${endId}). Ensure intermediate nodes are accessible.`);
+                        }
+                        player.pathfindingMode = false;
+                        player.selectedNodes = [];
+                        addToLog('Pathfinding mode deactivated.');
+                    }
+                } else {
+                    if (nodeId === 1) {
+                        console.log('Clicked Internet node; no menu displayed.');
+                        return;
+                    }
+                    showMenu(nodeId, params.event);
+                }
             }
         });
 
@@ -407,7 +624,7 @@
         network.on('oncontext', function(params) {
             params.event.preventDefault();
             if (params.nodes.length > 0) {
-                var nodeId = params.nodes[0];
+                const nodeId = params.nodes[0];
                 if (nodeId === 16) { // Helpdesk node
                     console.log(`Right-clicked node ${nodeId}: Helpdesk`);
                     showSocialEngineeringMenu(nodeId, params.event);
@@ -421,8 +638,8 @@
                 isMenuOpening = false;
                 return;
             }
-            var menu = document.getElementById('menu');
-            var seMenu = document.getElementById('social-engineering-menu');
+            const menu = document.getElementById('menu');
+            const seMenu = document.getElementById('social-engineering-menu');
             if (menu.style.display === 'block' && !menu.contains(event.target)) {
                 console.log('Menu closed');
                 closeMenu();
@@ -436,12 +653,12 @@
         // Show standard menu
         function showMenu(nodeId, event) {
             isMenuOpening = true;
-            var menu = document.getElementById('menu');
-            var exploitButton = document.getElementById('exploit-button');
-            var privescButton = document.getElementById('privesc-button');
-            var pwnButton = document.getElementById('pwn-button');
-            var deleteButton = document.getElementById('delete-button');
-            var node = nodes.get(nodeId);
+            const menu = document.getElementById('menu');
+            const exploitButton = document.getElementById('exploit-button');
+            const privescButton = document.getElementById('privesc-button');
+            const pwnButton = document.getElementById('pwn-button');
+            const deleteButton = document.getElementById('delete-button');
+            const node = nodes.get(nodeId);
 
             // Show Exploit button for scanned nodes (except if fully pwned for DCs or deleted for Backup Data)
             if (player.scannedNodes.includes(nodeId) && !(node.pwned && (nodeId === 6 || nodeId === 7)) && !(node.deleted && nodeId === 18)) {
@@ -481,7 +698,7 @@
         // Show social engineering menu
         function showSocialEngineeringMenu(nodeId, event) {
             isMenuOpening = true;
-            var menu = document.getElementById('social-engineering-menu');
+            const menu = document.getElementById('social-engineering-menu');
             menu.style.left = '10px';
             menu.style.top = '50px'; // Offset to avoid overlap with standard menu
             menu.style.display = 'block';
@@ -491,7 +708,7 @@
 
         // Close standard menu
         function closeMenu() {
-            var menu = document.getElementById('menu');
+            const menu = document.getElementById('menu');
             if (menu.style.display === 'block') {
                 console.log('Menu closed');
                 menu.style.display = 'none';
@@ -500,7 +717,7 @@
 
         // Close social engineering menu
         function closeSocialEngineeringMenu() {
-            var menu = document.getElementById('social-engineering-menu');
+            const menu = document.getElementById('social-engineering-menu');
             if (menu.style.display === 'block') {
                 console.log('Social Engineering Menu closed');
                 menu.style.display = 'none';
@@ -509,19 +726,19 @@
 
         // Update reachable nodes
         function updateReachableNodes(newNodeId) {
-            var newReachable = edges.get().filter(edge =>
+            const newReachable = edges.get().filter(edge =>
                 edge.from === newNodeId || edge.to === newNodeId
             ).map(edge =>
                 edge.from === newNodeId ? edge.to : edge.from
             ).filter(id => {
-                var node = nodes.get(id);
+                const node = nodes.get(id);
                 if (node.group === 'internal' && !player.compromisedNodes.includes(5)) {
                     return false;
                 }
                 return !player.compromisedNodes.includes(id) && !node.hidden && !(node.deleted && id === 18);
             });
             player.reachableNodes = [...new Set([...player.reachableNodes, ...newReachable])];
-            var newNodeLabels = newReachable.map(id => nodes.get(id).originalLabel).join(', ');
+            const newNodeLabels = newReachable.map(id => nodes.get(id).originalLabel).join(', ');
             if (newNodeLabels) {
                 addToLog(`Can now attack: ${newNodeLabels}.`);
             }
@@ -539,9 +756,9 @@
 
         // Perform standard action
         function performAction(action) {
-            var nodeId = parseInt(document.getElementById('menu').dataset.nodeId);
-            var node = nodes.get(nodeId);
-            var message = '';
+            const nodeId = parseInt(document.getElementById('menu').dataset.nodeId);
+            const node = nodes.get(nodeId);
+            let message = '';
 
             console.log(`Action performed: ${action} on node ${nodeId}: ${node.originalLabel}`);
 
@@ -692,9 +909,9 @@
 
         // Perform social engineering exploit
         function performSocialEngineeringExploit() {
-            var nodeId = parseInt(document.getElementById('social-engineering-menu').dataset.nodeId);
-            var node = nodes.get(nodeId);
-            var message = '';
+            const nodeId = parseInt(document.getElementById('social-engineering-menu').dataset.nodeId);
+            const node = nodes.get(nodeId);
+            let message = '';
 
             console.log(`Social Engineering Exploit performed on node ${nodeId}: ${node.originalLabel}`);
 
