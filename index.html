@@ -659,15 +659,16 @@
 
         // Handle node right-click
         network.on('oncontext', function(params) {
-            params.event.preventDefault();
-            if (params.nodes.length > 0) {
-                const nodeId = params.nodes[0];
-                if (nodeId === 16) { // Helpdesk node
-                    console.log(`Right-clicked node ${nodeId}: Helpdesk`);
-                    showSocialEngineeringMenu(nodeId, params.event);
-                }
-            }
-        });
+    params.event.preventDefault();
+    if (params.nodes.length > 0) {
+        const nodeId = params.nodes[0];
+        if (nodeId === 16) { // Helpdesk node
+            console.log(`Right-clicked node ${nodeId}: Helpdesk`);
+            closeMenu(); // Close the standard menu
+            showSocialEngineeringMenu(nodeId, params.event);
+        }
+    }
+});
 
         // Close menus on click outside
         document.addEventListener('click', function(event) {
