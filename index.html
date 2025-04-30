@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hacking Game</title>
+    <title>Attack the Net</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <style>
         * {
             box-sizing: border-box;
@@ -13,9 +14,12 @@
             padding: 0;
             height: 100%;
             overflow: hidden;
-            font-family: Arial, sans-serif;
-            background: #1a1a1a;
-            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            background: #0A0F1C; /* TRON dark blue-black */
+            color: #00D4FF; /* Neon blue text */
+            background-image: linear-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(0, 212, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px; /* Subtle grid for page background */
         }
         .container {
             display: grid;
@@ -24,20 +28,39 @@
             width: 100%;
         }
         #mynetwork {
-            border-right: 1px solid #ccc;
+            border-right: 2px solid #00D4FF; /* Neon blue border */
             overflow: hidden;
+            background: #0A0F1C;
+            position: relative;
+            /* TRON-like perspective grid background */
+            background-image: linear-gradient(45deg, rgba(0, 212, 255, 0.2) 1px, transparent 1px),
+                            linear-gradient(-45deg, rgba(0, 212, 255, 0.2) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        #mynetwork::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(0, 212, 255, 0.1), transparent 70%);
+            pointer-events: none; /* Allow clicks to pass through */
         }
         #log {
             padding: 1rem;
-            background: #222;
+            background: rgba(10, 15, 28, 0.8); /* Semi-transparent dark */
             overflow-y: auto;
             max-height: 100%;
             display: flex;
             flex-direction: column;
+            border-left: 2px solid #FF4800; /* Neon orange border */
         }
         #log h3 {
             margin: 0 0 1rem;
             font-size: 1.5rem;
+            color: #00D4FF;
+            text-shadow: 0 0 5px #00D4FF;
             flex-shrink: 0;
         }
         #log-content {
@@ -48,29 +71,37 @@
             margin: 0.5rem 0;
             font-size: 1rem;
             line-height: 1.5;
+            color: #FFFFFF;
+            text-shadow: 0 0 3px #00D4FF;
         }
         #menu, #social-engineering-menu {
             position: fixed;
-            background: #333;
+            background: rgba(10, 15, 28, 0.9);
             padding: 1rem;
-            border: 1px solid #666;
+            border: 2px solid #00D4FF;
+            border-radius: 5px;
             display: none;
             z-index: 1000;
+            box-shadow: 0 0 10px #00D4FF;
         }
         #menu button, #social-engineering-menu button, #controls button {
             display: block;
             margin: 0.5rem 0;
-            background: #444;
-            color: #fff;
-            border: none;
+            background: transparent;
+            color: #00D4FF;
+            border: 1px solid #00D4FF;
             padding: 0.5rem;
             cursor: pointer;
             font-size: 1rem;
+            font-family: 'Orbitron', sans-serif;
             width: 100%;
             text-align: left;
+            transition: all 0.3s ease;
         }
         #menu button:hover, #social-engineering-menu button:hover, #controls button:hover {
-            background: #555;
+            background: #00D4FF;
+            color: #0A0F1C;
+            box-shadow: 0 0 10px #00D4FF;
         }
         #menu button.hidden {
             display: none;
@@ -88,28 +119,32 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(10, 15, 28, 0.9);
             z-index: 2000;
             justify-content: center;
             align-items: center;
         }
         .modal-content {
-            background: #333;
+            background: rgba(10, 15, 28, 0.9);
             padding: 2rem;
-            border: 1px solid #666;
+            border: 2px solid #FF4800;
             border-radius: 5px;
             text-align: center;
             max-width: 400px;
             width: 90%;
+            box-shadow: 0 0 15px #FF4800;
         }
         .modal-content h2 {
             margin: 0 0 1rem;
             font-size: 2rem;
-            color: #66ff66;
+            color: #00D4FF;
+            text-shadow: 0 0 5px #00D4FF;
         }
         .modal-content p {
             margin: 0.5rem 0;
             font-size: 1.2rem;
+            color: #FFFFFF;
+            text-shadow: 0 0 3px #00D4FF;
         }
         .modal-content .button-container {
             display: flex;
@@ -118,28 +153,38 @@
             margin-top: 1rem;
         }
         .modal-content button {
-            background: #444;
-            color: #fff;
-            border: none;
+            background: transparent;
+            color: #00D4FF;
+            border: 1px solid #00D4FF;
             padding: 0.75rem 1.5rem;
             cursor: pointer;
             font-size: 1rem;
+            font-family: 'Orbitron', sans-serif;
             border-radius: 3px;
+            transition: all 0.3s ease;
         }
         .modal-content button:hover {
-            background: #555;
+            background: #00D4FF;
+            color: #0A0F1C;
+            box-shadow: 0 0 10px #00D4FF;
         }
         .modal-content .tweet-button {
-            background: #1DA1F2;
+            border-color: #FF4800;
+            color: #FF4800;
         }
         .modal-content .tweet-button:hover {
-            background: #1991DB;
+            background: #FF4800;
+            color: #0A0F1C;
+            box-shadow: 0 0 10px #FF4800;
         }
         .modal-content .start-button {
-            background: #66ff66;
+            border-color: #00D4FF;
+            color: #00D4FF;
         }
         .modal-content .start-button:hover {
-            background: #55cc55;
+            background: #00D4FF;
+            color: #0A0F1C;
+            box-shadow: 0 0 10px #00D4FF;
         }
         @media (max-width: 768px) {
             .container {
@@ -148,10 +193,12 @@
             }
             #mynetwork {
                 border-right: none;
-                border-bottom: 1px solid #ccc;
+                border-bottom: 2px solid #00D4FF;
             }
             #log {
                 max-height: 40vh;
+                border-left: none;
+                border-top: 2px solid #FF4800;
             }
             #controls {
                 top: 5px;
@@ -199,14 +246,14 @@
     </div>
     <div id="intro-modal" class="modal" style="display: flex;">
         <div class="modal-content">
-            <h2>Are you ready to attack the Net?</h2>
+            <h2>Ready to Hack the Grid?</h2>
             <button class="start-button" onclick="startGame()">START</button>
         </div>
     </div>
     <div id="win-modal" class="modal">
         <div class="modal-content">
             <h2>Mission Success</h2>
-            <p>Game Over</p>
+            <p>Grid Conquered</p>
             <p id="time-taken">Time Taken: --:--</p>
             <p id="score">Time-Based Score: 0</p>
             <p id="points">Points: 0</p>
@@ -255,6 +302,7 @@
             { id: 3, label: '', originalLabel: 'Email Server', group: 'dmz', services: ['SMTP'], required_tool: 'Email Credential', contains_tools: ['VPN Credential'], exploitable: true },
             { id: 4, label: '', originalLabel: 'VPN Server', group: 'dmz', services: ['VPN'], required_tool: 'VPN Credential', contains_tools: ['HR Credential', 'Firewall Exploit'], exploitable: true },
             { id: 5, label: '', originalLabel: 'Firewall', group: 'firewall', services: [], required_tool: 'Firewall Exploit', contains_tools: [], exploitable: true, hidden: true },
+            // Note: 'pwned' tracks whether the Domain Controller is fully compromised via the PWN action
             { id: 6, label: '', originalLabel: 'Domain Controller 1', group: 'internal', services: ['RDP'], required_tool: 'DC Credential', contains_tools: [], exploitable: true, hidden: true, privescDone: false, pwned: false },
             { id: 7, label: '', originalLabel: 'Domain Controller 2', group: 'internal', services: ['RDP'], required_tool: 'DC Credential', contains_tools: [], exploitable: true, hidden: true, privescDone: false, pwned: false },
             { id: 8, label: '', originalLabel: 'File Server', group: 'internal', services: [], required_tool: 'User Credential', contains_tools: [], exploitable: true, hidden: true },
@@ -300,18 +348,31 @@
             nodes: {
                 shape: 'dot',
                 size: 15,
-                font: { size: 12, color: '#fff' },
-                borderWidth: 2
+                font: { size: 12, color: '#FFFFFF', face: 'Orbitron' },
+                borderWidth: 2,
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(0, 212, 255, 0.5)',
+                    size: 5,
+                    x: 0,
+                    y: 0
+                }
             },
             groups: {
-                internet: { color: { background: '#ff6666', border: '#cc0000' } },
-                dmz: { color: { background: '#66ccff', border: '#0066cc' } },
-                firewall: { color: { background: '#ffcc00', border: '#cc9900' } },
-                internal: { color: { background: '#66ff66', border: '#00cc00' } }
+                internet: { color: { background: '#FF4800', border: '#CC3700' }, shadow: { color: '#FF4800' } }, // Neon orange
+                dmz: { color: { background: '#00D4FF', border: '#0099CC' }, shadow: { color: '#00D4FF' } }, // Neon blue
+                firewall: { color: { background: '#FFFFFF', border: '#CCCCCC' }, shadow: { color: '#FFFFFF' } }, // White
+                internal: { color: { background: '#FF4800', border: '#CC3700' }, shadow: { color: '#FF4800' } } // Neon orange
             },
             edges: {
-                color: { color: '#ccc' },
-                width: 1
+                color: { color: '#00D4FF', highlight: '#FF4800' },
+                width: 2,
+                dashes: [5, 5], // Dashed lines for TRON effect
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(0, 212, 255, 0.5)',
+                    size: 3
+                }
             },
             interaction: {
                 hover: true,
@@ -390,7 +451,7 @@
             timeDisplay.textContent = `Time Taken: ${formatTime(timeTaken)}`;
             scoreDisplay.textContent = `Time-Based Score: ${score.toLocaleString()}`;
             pointsDisplay.textContent = `Action Points: ${points.toLocaleString()}`;
-            const tweetText = `I attacked the net and won! Time: ${formatTime(timeTaken)}, Time Score: ${score.toLocaleString()}, Action Points: ${points.toLocaleString()}! Play here: https://mr-r3b00t.github.io/attack_the_net/ #AttackTheNet #Hacking #game`;
+            const tweetText = `I conquered the NET! Time: ${formatTime(timeTaken)}, Time Score: ${score.toLocaleString()}, Action Points: ${points.toLocaleString()}! Play here: https://mr-r3b00t.github.io/attack_the_net/ #Hacking #game`;
             const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
             tweetButton.onclick = () => window.open(tweetUrl, '_blank');
             modal.style.display = 'flex';
@@ -401,32 +462,30 @@
             location.reload();
         }
 
-       // Pathfinding functions
-       function togglePathfindingMode() {
-    player.pathfindingMode = !player.pathfindingMode;
-    player.selectedNodes = [];
-    network.unselectAll();
-    network.selectNodes([]);
-    if (player.pathfindingMode) {
-        addToLog('Pathfinding mode activated. Click the start node, then the end node.');
-        closeMenu();
-        closeSocialEngineeringMenu();
-        resetEdgeColors();
-    } else {
-        addToLog('Pathfinding mode deactivated.');
-        resetEdgeColors();
-        closeMenu();
-        closeSocialEngineeringMenu();
-    }
-}
+        // Pathfinding functions
+        function togglePathfindingMode() {
+            player.pathfindingMode = !player.pathfindingMode;
+            player.selectedNodes = [];
+            network.unselectAll();
+            network.selectNodes([]);
+            if (player.pathfindingMode) {
+                addToLog('Pathfinding mode activated. Click the start node, then the end node.');
+                closeMenu();
+                closeSocialEngineeringMenu();
+                resetEdgeColors();
+            } else {
+                addToLog('Pathfinding mode deactivated.');
+                resetEdgeColors();
+                closeMenu();
+                closeSocialEngineeringMenu();
+            }
+        }
 
         function resetEdgeColors() {
-            edges.update(edges.get().map(edge => ({ id: edge.id, color: { color: '#ccc' } })));
+            edges.update(edges.get().map(edge => ({ id: edge.id, color: { color: '#00D4FF' } })));
         }
 
         function findPath(startId, endId) {
-
-
             // Map tools to their source nodes
             const toolSources = {
                 'Web Exploit': 1, // Internet
@@ -565,132 +624,143 @@
             return steps;
         }
 
-        // Highlight path edges
+        // Highlight path edges for path finder
         function highlightPath(path) {
-    const pathEdges = [];
-    for (let i = 0; i < path.length - 1; i++) {
-        const from = path[i];
-        const to = path[i + 1];
-        const edge = edges.get().find(e => 
-            ((e.from === from && e.to === to) || (e.from === to && e.to === from))
-        );
-        if (edge) {
-            pathEdges.push({ id: edge.id, color: { color: '#ff0000' } });
-        }
-    }
-    edges.update(pathEdges);
+            const pathEdges = [];
+            for (let i = 0; i < path.length - 1; i++) {
+                const from = path[i];
+                const to = path[i + 1];
+                const edge = edges.get().find(e => 
+                    ((e.from === from && e.to === to) || (e.from === to && e.to === from))
+                );
+                if (edge) {
+                    pathEdges.push({ id: edge.id, color: { color: '#FF4800' } });
+                }
+            }
+            edges.update(pathEdges);
 
-    // Reset edge colors and ensure no nodes are selected after 10 seconds
-    setTimeout(() => {
-        resetEdgeColors();
-        network.unselectAll();
-        network.selectNodes([]);
-    }, 10000);
-}
+            // Reset edge colors and ensure no nodes are selected after 10 seconds
+            setTimeout(() => {
+                resetEdgeColors();
+                network.unselectAll();
+                network.selectNodes([]);
+            }, 10000);
+        }
+
         // Menu handling
         let isMenuOpening = false;
-        
 
         // Handle node left-click
- // Handle node left-click
- network.on('click', function(params) {
-    if (params.nodes.length > 0) {
-        const nodeId = params.nodes[0];
-        const nodeLabel = nodes.get(nodeId).originalLabel;
-        console.log(`Left-clicked node ${nodeId}: ${nodeLabel}`);
-
-        if (player.pathfindingMode) {
-            player.selectedNodes.push(nodeId);
-            addToLog(`Selected node ${nodeId} (${nodeLabel}) for pathfinding.`);
-            if (player.selectedNodes.length === 2) {
-                const [startId, endId] = player.selectedNodes;
-                const startNode = nodes.get(startId);
-                const endNode = nodes.get(endId);
-
-                let canFindPath = true;
-                if (endNode.group === 'internal' && !player.compromisedNodes.includes(5)) {
-                    addToLog(`Cannot find path to ${endNode.originalLabel} (Node ${endId}). Compromise the Firewall (Node 5) to access the internal network.`);
-                    canFindPath = false;
-                }
-
-                if (canFindPath) {
-                    const path = findPath(startId, endId);
-                    if (path) {
-                        const startLabel = nodes.get(startId).originalLabel;
-                        const endLabel = nodes.get(endId).originalLabel;
-                        addToLog(`Path from ${startLabel} (Node ${startId}) to ${endLabel} (Node ${endId}): ${path.map(id => nodes.get(id).originalLabel).join(' -> ')}`);
-                        const steps = getRequiredSteps(path);
-                        if (steps.length > 0) {
-                            addToLog('Required steps:');
-                            steps.forEach(step => addToLog(step));
-                        } else {
-                            addToLog('No additional steps required (all nodes already compromised or accessible).');
-                        }
-                        highlightPath(path); // Highlight the path
-                    } else {
-                        addToLog(`No valid path found from ${nodes.get(startId).originalLabel} (Node ${startId}) to ${nodes.get(endId).originalLabel} (Node ${endId}). Ensure intermediate nodes are accessible.`);
-                    }
-                }
-
-                // Reset pathfinding mode and clear selections
-                player.pathfindingMode = false;
-                player.selectedNodes = [];
-                closeMenu();
-                closeSocialEngineeringMenu();
-                network.unselectAll(); // Clear node selections
-                network.selectNodes([]); // Explicitly set no nodes as selected
-                addToLog('Pathfinding mode deactivated.');
-            }
-        } else {
-            if (nodeId === 1) {
-                console.log('Clicked Internet node; no menu displayed.');
+        network.on('click', function(params) {
+            // Prevent left-click from interfering if right-click menu is open
+            const seMenu = document.getElementById('social-engineering-menu');
+            if (seMenu.style.display === 'block') {
                 return;
             }
-            showMenu(nodeId, params.event);
-        }
-    } else {
-        // Clear selection if clicking on the canvas (no node selected)
-        network.unselectAll();
-        network.selectNodes([]);
-        closeMenu();
-        closeSocialEngineeringMenu();
-    }
-});
+
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                const nodeLabel = nodes.get(nodeId).originalLabel;
+                console.log(`Left-clicked node ${nodeId}: ${nodeLabel}`);
+
+                if (player.pathfindingMode) {
+                    player.selectedNodes.push(nodeId);
+                    addToLog(`Selected node ${nodeId} (${nodeLabel}) for pathfinding.`);
+                    if (player.selectedNodes.length === 2) {
+                        const [startId, endId] = player.selectedNodes;
+                        const startNode = nodes.get(startId);
+                        const endNode = nodes.get(endId);
+
+                        let canFindPath = true;
+                        if (endNode.group === 'internal' && !player.compromisedNodes.includes(5)) {
+                            addToLog(`Cannot find path to ${endNode.originalLabel} (Node ${endId}). Compromise the Firewall (Node 5) to access the internal network.`);
+                            canFindPath = false;
+                        }
+
+                        if (canFindPath) {
+                            const path = findPath(startId, endId);
+                            if (path) {
+                                const startLabel = nodes.get(startId).originalLabel;
+                                const endLabel = nodes.get(endId).originalLabel;
+                                addToLog(`Path from ${startLabel} (Node ${startId}) to ${endLabel} (Node ${endId}): ${path.map(id => nodes.get(id).originalLabel).join(' -> ')}`);
+                                const steps = getRequiredSteps(path);
+                                if (steps.length > 0) {
+                                    addToLog('Required steps:');
+                                    steps.forEach(step => addToLog(step));
+                                } else {
+                                    addToLog('No additional steps required (all nodes already compromised or accessible).');
+                                }
+                                highlightPath(path); // Highlight the path
+                            } else {
+                                addToLog(`No valid path found from ${nodes.get(startId).originalLabel} (Node ${startId}) to ${nodes.get(endId).originalLabel} (Node ${endId}). Ensure intermediate nodes are accessible.`);
+                            }
+                        }
+
+                        // Reset pathfinding mode and clear selections
+                        player.pathfindingMode = false;
+                        player.selectedNodes = [];
+                        closeMenu();
+                        closeSocialEngineeringMenu();
+                        network.unselectAll(); // Clear node selections
+                        network.selectNodes([]); // Explicitly set no nodes as selected
+                        addToLog('Pathfinding mode deactivated.');
+                    }
+                } else {
+                    if (nodeId === 1) {
+                        console.log('Clicked Internet node; no menu displayed.');
+                        return;
+                    }
+                    showMenu(nodeId, params.event);
+                }
+            } else {
+                // Clear selection if clicking on the canvas (no node selected)
+                closeMenu();
+                closeSocialEngineeringMenu();
+                network.unselectAll();
+                network.selectNodes([]);
+            }
+        });
 
         // Handle node right-click
         network.on('oncontext', function(params) {
-    params.event.preventDefault();
-    if (params.nodes.length > 0) {
-        const nodeId = params.nodes[0];
-        if (nodeId === 16) { // Helpdesk node
-            console.log(`Right-clicked node ${nodeId}: Helpdesk`);
-            closeMenu(); // Close the standard menu
-            showSocialEngineeringMenu(nodeId, params.event);
-        }
-    }
-});
+            params.event.preventDefault();
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                if (nodeId === 16) { // Helpdesk node
+                    console.log(`Right-clicked node ${nodeId}: Helpdesk`);
+                    closeMenu(); // Close the standard menu
+                    showSocialEngineeringMenu(nodeId, params.event);
+                    // Ensure the node remains selected
+                    network.selectNodes([nodeId]);
+                }
+            } else {
+                // Close menus if right-clicked on canvas
+                closeMenu();
+                closeSocialEngineeringMenu();
+            }
+        });
 
         // Close menus on click outside
         document.addEventListener('click', function(event) {
-    if (isMenuOpening || player.pathfindingMode) {
-        isMenuOpening = false;
-        return;
-    }
-    const menu = document.getElementById('menu');
-    const seMenu = document.getElementById('social-engineering-menu');
-    if (menu.style.display === 'block' && !menu.contains(event.target)) {
-        console.log('Menu closed');
-        closeMenu();
-        network.unselectAll();
-        network.selectNodes([]);
-    }
-    if (seMenu.style.display === 'block' && !seMenu.contains(event.target)) {
-        console.log('Social Engineering Menu closed');
-        closeSocialEngineeringMenu();
-        network.unselectAll();
-        network.selectNodes([]);
-    }
-});
+            if (isMenuOpening) {
+                isMenuOpening = false;
+                return;
+            }
+            const menu = document.getElementById('menu');
+            const seMenu = document.getElementById('social-engineering-menu');
+            if (menu.style.display === 'block' && !menu.contains(event.target)) {
+                console.log('Menu closed');
+                closeMenu();
+                network.unselectAll();
+                network.selectNodes([]);
+            }
+            if (seMenu.style.display === 'block' && !seMenu.contains(event.target)) {
+                console.log('Social Engineering Menu closed');
+                closeSocialEngineeringMenu();
+                network.unselectAll();
+                network.selectNodes([]);
+            }
+        });
 
         // Show standard menu
         function showMenu(nodeId, event) {
@@ -735,6 +805,7 @@
             menu.style.display = 'block';
             menu.dataset.nodeId = nodeId;
             console.log(`Menu shown for node ${nodeId}: ${nodes.get(nodeId).originalLabel}`);
+            setTimeout(() => { isMenuOpening = false; }, 0); // Reset flag after event loop
         }
 
         // Show social engineering menu
@@ -746,6 +817,7 @@
             menu.style.display = 'block';
             menu.dataset.nodeId = nodeId;
             console.log(`Social Engineering Menu shown for node ${nodeId}: Helpdesk`);
+            setTimeout(() => { isMenuOpening = false; }, 0); // Reset flag after event loop
         }
 
         // Close standard menu
@@ -798,156 +870,156 @@
 
         // Perform standard action
         function performAction(action) {
-    const nodeId = parseInt(document.getElementById('menu').dataset.nodeId);
-    const node = nodes.get(nodeId);
-    let message = '';
+            const nodeId = parseInt(document.getElementById('menu').dataset.nodeId);
+            const node = nodes.get(nodeId);
+            let message = '';
 
-    console.log(`Action performed: ${action} on node ${nodeId}: ${node.originalLabel}`);
+            console.log(`Action performed: ${action} on node ${nodeId}: ${node.originalLabel}`);
 
-    if (!isReachable(nodeId) && action !== 'scan') {
-        message = `You cannot interact with this node. Compromise more nodes to expand your reach.`;
-    } else if (node.group === 'internal' && !player.compromisedNodes.includes(5) && action !== 'scan') {
-        message = `Cannot perform ${action} on this node. Compromise the Firewall to access the internal network.`;
-    } else {
-        switch (action) {
-            case 'scan':
-                if (!player.scannedNodes.includes(nodeId)) {
-                    player.scannedNodes.push(nodeId);
-                    nodes.update({ id: nodeId, label: node.originalLabel });
-                    player.points += 5; // Award 5 points for scan
-                    message = `Scanning ${node.originalLabel}... Found services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}. (+5 points)`;
-                    addToLog(`Earned 5 points for scanning ${node.originalLabel}. Total points: ${player.points}`);
-                } else {
-                    message = `${node.originalLabel} has already been scanned. Services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}.`;
+            if (!isReachable(nodeId) && action !== 'scan') {
+                message = `You cannot interact with this node. Compromise more nodes to expand your reach.`;
+            } else if (node.group === 'internal' && !player.compromisedNodes.includes(5) && action !== 'scan') {
+                message = `Cannot perform ${action} on this node. Compromise the Firewall to access the internal network.`;
+            } else {
+                switch (action) {
+                    case 'scan':
+                        if (!player.scannedNodes.includes(nodeId)) {
+                            player.scannedNodes.push(nodeId);
+                            nodes.update({ id: nodeId, label: node.originalLabel });
+                            player.points += 5; // Award 5 points for scan
+                            message = `Scanning ${node.originalLabel}... Found services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}. (+5 points)`;
+                            addToLog(`Earned 5 points for scanning ${node.originalLabel}. Total points: ${player.points}`);
+                        } else {
+                            message = `${node.originalLabel} has already been scanned. Services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}.`;
+                        }
+                        break;
+                    case 'exploit':
+                        if (!player.scannedNodes.includes(nodeId)) {
+                            message = `Cannot exploit ${node.originalLabel || 'this node'}. You must scan it first.`;
+                        } else if (nodeId === 16) {
+                            message = `Cannot exploit ${node.originalLabel} with standard methods. Use social engineering (right-click).`;
+                        } else if (!node.exploitable) {
+                            message = `${node.originalLabel} cannot be exploited.`;
+                        } else if (node.compromised) {
+                            message = `${node.originalLabel} is already compromised.`;
+                        } else if (node.required_tool && !player.tools.includes(node.required_tool)) {
+                            message = `Cannot exploit ${node.originalLabel}. Missing required tool: ${node.required_tool}. Try exploiting other nodes to obtain it.`;
+                        } else {
+                            node.compromised = true;
+                            player.compromisedNodes.push(nodeId);
+                            const exploitColor = (nodeId === 6 || nodeId === 7) ? 
+                                { background: '#FF4800', border: '#CC3700' } : 
+                                { background: '#FF0000', border: '#CC0000' };
+                            nodes.update({ id: nodeId, color: exploitColor });
+                            const pointsAwarded = nodeId === 17 ? 50 : 10;
+                            player.points += pointsAwarded;
+                            if (node.contains_tools.length > 0) {
+                                player.tools = player.tools.concat(node.contains_tools);
+                                message = `Exploited ${node.originalLabel}! Gained: ${node.contains_tools.join(', ')}. (+${pointsAwarded} points)`;
+                            } else {
+                                message = `Exploited ${node.originalLabel}! Node compromised. (+${pointsAwarded} points)`;
+                            }
+                            addToLog(`Earned ${pointsAwarded} points for exploiting ${node.originalLabel}. Total points: ${player.points}`);
+                            if (nodeId === 4) {
+                                nodes.update({ id: 5, hidden: false });
+                                edges.update([
+                                    { id: '2-5', hidden: false },
+                                    { id: '3-5', hidden: false },
+                                    { id: '4-5', hidden: false }
+                                ]);
+                                player.reachableNodes.push(5);
+                                addToLog('Firewall discovered! It can now be attacked after scanning.');
+                            } else if (nodeId === 5) {
+                                nodes.update([
+                                    { id: 6, hidden: false },
+                                    { id: 7, hidden: false },
+                                    { id: 8, hidden: false },
+                                    { id: 9, hidden: false },
+                                    { id: 10, hidden: false },
+                                    { id: 11, hidden: false },
+                                    { id: 12, hidden: false },
+                                    { id: 13, hidden: false },
+                                    { id: 14, hidden: false },
+                                    { id: 15, hidden: false },
+                                    { id: 17, hidden: false } // Reveal Hypervisor
+                                ]);
+                                edges.update([
+                                    { id: '5-6', hidden: false },
+                                    { id: '5-7', hidden: false },
+                                    { id: '5-8', hidden: false },
+                                    { id: '5-9', hidden: false },
+                                    { id: '5-11', hidden: false },
+                                    { id: '5-12', hidden: false },
+                                    { id: '5-13', hidden: false },
+                                    { id: '5-14', hidden: false },
+                                    { id: '5-15', hidden: false },
+                                    { id: '9-10', hidden: false },
+                                    { id: '14-17', hidden: false } // Reveal IT Admin to Hypervisor edge
+                                ]);
+                                addToLog('Firewall compromised! Internal network discovered, including Hypervisor, accessible after scanning.');
+                            } else if (nodeId === 15) {
+                                nodes.update({ id: 18, hidden: false }); // Reveal Backup Data
+                                edges.update({ id: '15-18', hidden: false }); // Reveal Backup Server to Backup Data edge
+                                player.reachableNodes.push(18);
+                                addToLog('Backup Data discovered! It can now be attacked after scanning.');
+                            } else if (nodeId === 8) {
+                                const timeTaken = (Date.now() - player.startTime) / 1000;
+                                const score = calculateScore(timeTaken);
+                                message = `File Server compromised! Mission accomplished. (+${pointsAwarded} points)`;
+                                showWinModal(timeTaken, score, player.points);
+                            }
+                            updateReachableNodes(nodeId);
+                        }
+                        break;
+                    case 'privesc':
+                        if (nodeId !== 6 && nodeId !== 7) {
+                            message = `Privilege escalation is only applicable to Domain Controllers.`;
+                        } else if (!node.compromised) {
+                            message = `Cannot perform privilege escalation on ${node.originalLabel}. Exploit it first.`;
+                        } else if (node.privescDone) {
+                            message = `Privilege escalation already performed on ${node.originalLabel}.`;
+                        } else {
+                            node.privescDone = true;
+                            player.points += 5; // Award 5 points for privesc
+                            message = `Privilege escalation successful on ${node.originalLabel}! (+5 points)`;
+                            addToLog(`Earned 5 points for privilege escalation on ${node.originalLabel}. Total points: ${player.points}`);
+                        }
+                        break;
+                    case 'pwn':
+                        if (nodeId !== 6 && nodeId !== 7) {
+                            message = `PWN is only applicable to Domain Controllers.`;
+                        } else if (!node.privescDone) {
+                            message = `Cannot PWN ${node.originalLabel}. Perform privilege escalation first.`;
+                        } else if (node.pwned) {
+                            message = `${node.originalLabel} is already fully compromised (pwned).`;
+                        } else {
+                            node.pwned = true;
+                            nodes.update({ id: nodeId, color: { background: '#FF0000', border: '#CC0000' } }); // Set red color on PWN
+                            message = `PWNed ${node.originalLabel}! Domain Controller fully compromised.`;
+                            addToLog(`Domain Controller ${node.originalLabel} fully compromised (pwned).`);
+                        }
+                        break;
+                    case 'delete':
+                        if (nodeId !== 18) {
+                            message = `Delete is only applicable to Backup Data.`;
+                        } else if (!player.scannedNodes.includes(nodeId)) {
+                            message = `Cannot delete ${node.originalLabel}. You must scan it first.`;
+                        } else if (node.deleted) {
+                            message = `${node.originalLabel} has already been deleted.`;
+                        } else {
+                            node.deleted = true;
+                            nodes.update({ id: nodeId, color: { background: '#FF0000', border: '#CC0000' } }); // Set red color on delete
+                            player.points += 150; // Award 150 points for delete
+                            message = `Deleted ${node.originalLabel}! Backup data destroyed. (+150 points)`;
+                            addToLog(`Earned 150 points for deleting ${node.originalLabel}. Total points: ${player.points}`);
+                        }
+                        break;
                 }
-                break;
-            case 'exploit':
-                if (!player.scannedNodes.includes(nodeId)) {
-                    message = `Cannot exploit ${node.originalLabel || 'this node'}. You must scan it first.`;
-                } else if (nodeId === 16) {
-                    message = `Cannot exploit ${node.originalLabel} with standard methods. Use social engineering (right-click).`;
-                } else if (!node.exploitable) {
-                    message = `${node.originalLabel} cannot be exploited.`;
-                } else if (node.compromised) {
-                    message = `${node.originalLabel} is already compromised.`;
-                } else if (node.required_tool && !player.tools.includes(node.required_tool)) {
-                    message = `Cannot exploit ${node.originalLabel}. Missing required tool: ${node.required_tool}. Try exploiting other nodes to obtain it.`;
-                } else {
-                    node.compromised = true;
-                    player.compromisedNodes.push(nodeId);
-                    const exploitColor = (nodeId === 6 || nodeId === 7) ? 
-                        { background: '#ff9900', border: '#cc6600' } : 
-                        { background: '#ff0000', border: '#cc0000' };
-                    nodes.update({ id: nodeId, color: exploitColor });
-                    const pointsAwarded = nodeId === 17 ? 50 : 10;
-                    player.points += pointsAwarded;
-                    if (node.contains_tools.length > 0) {
-                        player.tools = player.tools.concat(node.contains_tools);
-                        message = `Exploited ${node.originalLabel}! Gained: ${node.contains_tools.join(', ')}. (+${pointsAwarded} points)`;
-                    } else {
-                        message = `Exploited ${node.originalLabel}! Node compromised. (+${pointsAwarded} points)`;
-                    }
-                    addToLog(`Earned ${pointsAwarded} points for exploiting ${node.originalLabel}. Total points: ${player.points}`);
-                    if (nodeId === 4) {
-                        nodes.update({ id: 5, hidden: false });
-                        edges.update([
-                            { id: '2-5', hidden: false },
-                            { id: '3-5', hidden: false },
-                            { id: '4-5', hidden: false }
-                        ]);
-                        player.reachableNodes.push(5);
-                        addToLog('Firewall discovered! It can now be attacked after scanning.');
-                    } else if (nodeId === 5) {
-                        nodes.update([
-                            { id: 6, hidden: false },
-                            { id: 7, hidden: false },
-                            { id: 8, hidden: false },
-                            { id: 9, hidden: false },
-                            { id: 10, hidden: false },
-                            { id: 11, hidden: false },
-                            { id: 12, hidden: false },
-                            { id: 13, hidden: false },
-                            { id: 14, hidden: false },
-                            { id: 15, hidden: false },
-                            { id: 17, hidden: false } // Reveal Hypervisor
-                        ]);
-                        edges.update([
-                            { id: '5-6', hidden: false },
-                            { id: '5-7', hidden: false },
-                            { id: '5-8', hidden: false },
-                            { id: '5-9', hidden: false },
-                            { id: '5-11', hidden: false },
-                            { id: '5-12', hidden: false },
-                            { id: '5-13', hidden: false },
-                            { id: '5-14', hidden: false },
-                            { id: '5-15', hidden: false },
-                            { id: '9-10', hidden: false },
-                            { id: '14-17', hidden: false } // Reveal IT Admin to Hypervisor edge
-                        ]);
-                        addToLog('Firewall compromised! Internal network discovered, including Hypervisor, accessible after scanning.');
-                    } else if (nodeId === 15) {
-                        nodes.update({ id: 18, hidden: false }); // Reveal Backup Data
-                        edges.update({ id: '15-18', hidden: false }); // Reveal Backup Server to Backup Data edge
-                        player.reachableNodes.push(18);
-                        addToLog('Backup Data discovered! It can now be attacked after scanning.');
-                    } else if (nodeId === 8) {
-                        const timeTaken = (Date.now() - player.startTime) / 1000;
-                        const score = calculateScore(timeTaken);
-                        message = `File Server compromised! Mission accomplished. (+${pointsAwarded} points)`;
-                        showWinModal(timeTaken, score, player.points);
-                    }
-                    updateReachableNodes(nodeId);
-                }
-                break;
-            case 'privesc':
-                if (nodeId !== 6 && nodeId !== 7) {
-                    message = `Privilege escalation is only applicable to Domain Controllers.`;
-                } else if (!node.compromised) {
-                    message = `Cannot perform privilege escalation on ${node.originalLabel}. Exploit it first.`;
-                } else if (node.privescDone) {
-                    message = `Privilege escalation already performed on ${node.originalLabel}.`;
-                } else {
-                    node.privescDone = true;
-                    player.points += 5; // Award 5 points for privesc
-                    message = `Privilege escalation successful on ${node.originalLabel}! (+5 points)`;
-                    addToLog(`Earned 5 points for privilege escalation on ${node.originalLabel}. Total points: ${player.points}`);
-                }
-                break;
-            case 'pwn':
-                if (nodeId !== 6 && nodeId !== 7) {
-                    message = `PWN is only applicable to Domain Controllers.`;
-                } else if (!node.privescDone) {
-                    message = `Cannot PWN ${node.originalLabel}. Perform privilege escalation first.`;
-                } else if (node.pwned) {
-                    message = `${node.originalLabel} is already fully compromised (pwned).`;
-                } else {
-                    node.pwned = true;
-                    nodes.update({ id: nodeId, color: { background: '#ff0000', border: '#cc0000' } }); // Set red color on PWN
-                    message = `PWNed ${node.originalLabel}! Domain Controller fully compromised.`;
-                    addToLog(`Domain Controller ${node.originalLabel} fully compromised (pwned).`);
-                }
-                break;
-            case 'delete':
-                if (nodeId !== 18) {
-                    message = `Delete is only applicable to Backup Data.`;
-                } else if (!player.scannedNodes.includes(nodeId)) {
-                    message = `Cannot delete ${node.originalLabel}. You must scan it first.`;
-                } else if (node.deleted) {
-                    message = `${node.originalLabel} has already been deleted.`;
-                } else {
-                    node.deleted = true;
-                    nodes.update({ id: nodeId, color: { background: '#ff0000', border: '#cc0000' } }); // Set red color on delete
-                    player.points += 150; // Award 150 points for delete
-                    message = `Deleted ${node.originalLabel}! Backup data destroyed. (+150 points)`;
-                    addToLog(`Earned 150 points for deleting ${node.originalLabel}. Total points: ${player.points}`);
-                }
-                break;
+            }
+
+            addToLog(message);
+            closeMenu();
         }
-    }
-
-    addToLog(message);
-    closeMenu();
-}
 
         // Perform social engineering exploit
         function performSocialEngineeringExploit() {
@@ -966,7 +1038,7 @@
             } else {
                 node.compromised = true;
                 player.compromisedNodes.push(nodeId);
-                nodes.update({ id: nodeId, color: { background: '#ff0000', border: '#cc0000' } });
+                nodes.update({ id: nodeId, color: { background: '#FF0000', border: '#CC0000' } });
                 player.points += 20; // Award 20 points for Helpdesk exploit
                 if (node.contains_tools.length > 0) {
                     player.tools = player.tools.concat(node.contains_tools);
@@ -981,21 +1053,6 @@
             addToLog(message);
             closeSocialEngineeringMenu();
         }
-
-
-        function simulateCanvasClick() {
-    const canvas = document.querySelector('#mynetwork canvas');
-    if (!canvas) {
-        console.error('Canvas element not found.');
-        return;
-    }
-
-
-
-    // Dispatch the event to the canvas
-    canvas.dispatchEvent(clickEvent);
-    console.log('Simulated click on canvas at (10, 10).');
-}
     </script>
 </body>
 </html>
