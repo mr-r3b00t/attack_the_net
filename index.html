@@ -274,6 +274,8 @@
         exploitAudio.volume = 0.9;
         const scanAudio = new Audio('/attack_the_net/assets/scan.mp3');
         scanAudio.volume = 0.7;
+        const deflectAudio = new Audio('/attack_the_net/assets/deflect.mp3');
+        deflectAudio.volume = 0.7;
 
         function playBackgroundAudio() {
             backgroundAudio.play().catch(error => {
@@ -451,7 +453,7 @@
             var introModal = document.getElementById('intro-modal');
             introModal.style.display = 'none';
             player.startTime = Date.now();
-            playBackgroundAudio();
+            play质疑Audio();
             addToLog('Game started. You are on the Internet. Objective: Compromise the File Server.');
             addToLog(`Initial tools: ${player.tools.join(', ') || 'None'}.`);
             addToLog(`Can initially attack: Node 2, Node 3, Node 4, Node 16.`);
@@ -870,8 +872,18 @@
 
             if (!isReachable(nodeId) && action !== 'scan') {
                 message = `You cannot interact with this node. Compromise more nodes to expand your reach.`;
+                if (action === 'exploit') {
+                    deflectAudio.play().catch(error => {
+                        console.error('Deflect audio playback failed:', error);
+                    });
+                }
             } else if (node.group === 'internal' && !player.compromisedNodes.includes(5) && action !== 'scan') {
                 message = `Cannot perform ${action} on this node. Compromise the Firewall to access the internal network.`;
+                if (action === 'exploit') {
+                    deflectAudio.play().catch(error => {
+                        console.error('Deflect audio playback failed:', error);
+                    });
+                }
             } else {
                 switch (action) {
                     case 'scan':
@@ -886,19 +898,37 @@
                             addToLog(`Earned 5 points for scanning ${node.originalLabel}. Total points: ${player.points}`);
                         } else {
                             message = `${node.originalLabel} has already been scanned. Services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}.`;
+                            deflectAudio.play().catch(error => {
+                                console.error('Deflect audio playback failed:', error);
+                            });
                         }
                         break;
                     case 'exploit':
                         if (!player.scannedNodes.includes(nodeId)) {
                             message = `Cannot exploit ${node.originalLabel || 'this node'}. You must scan it first.`;
+                            deflectAudio.play().catch(error => {
+                                console.error('Deflect audio playback failed:', error);
+                            });
                         } else if (nodeId === 16) {
                             message = `Cannot exploit ${node.originalLabel} with standard methods. Use social engineering (right-click).`;
+                            deflectAudio.play().catch(error => {
+                                console.error('Deflect audio playback failed:', error);
+                            });
                         } else if (!node.exploitable) {
                             message = `${node.originalLabel} cannot be exploited.`;
+                            deflectAudio.play().catch(error => {
+                                console.error('Deflect audio playback failed:', error);
+                            });
                         } else if (node.compromised) {
                             message = `${node.originalLabel} is already compromised.`;
+                            deflectAudio.play().catch(error => {
+                                console.error('Deflect audio playback failed:', error);
+                            });
                         } else if (node.required_tool && !player.tools.includes(node.required_tool)) {
                             message = `Cannot exploit ${node.originalLabel}. Missing required tool: ${node.required_tool}. Try exploiting other nodes to obtain it.`;
+                            deflectAudio.play().catch(error => {
+                                console.error('Deflect audio playback failed:', error);
+                            });
                         } else {
                             node.compromised = true;
                             player.compromisedNodes.push(nodeId);
@@ -992,7 +1022,7 @@
                             message = `${node.originalLabel} is already fully compromised (pwned).`;
                         } else {
                             node.pwned = true;
-                            nodes.update({ id:  nodeId, color: { background: '#FF0000', border: '#CC0000' } });
+                            nodes.update({ id: nodeId, color: { background: '#FF0000', border: '#CC0000' } });
                             message = `PWNed ${node.originalLabel}! Domain Controller fully compromised.`;
                             addToLog(`Domain Controller ${node.originalLabel} fully compromised (pwned).`);
                         }
@@ -1028,10 +1058,19 @@
 
             if (!isReachable(nodeId)) {
                 message = `You cannot interact with this node. Compromise more nodes to expand your reach.`;
+                deflectAudio.play().catch(error => {
+                    console.error('Deflect audio playback failed:', error);
+                });
             } else if (!player.scannedNodes.includes(nodeId)) {
                 message = `Cannot exploit ${node.originalLabel} with social engineering. You must scan it first.`;
+                deflectAudio.play().catch(error => {
+                    console.error('Deflect audio playback failed:', error);
+                });
             } else if (node.compromised) {
                 message = `${node.originalLabel} is already compromised.`;
+                deflectAudio.play().catch(error => {
+                    console.error('Deflect audio playback failed:', error);
+                });
             } else {
                 node.compromised = true;
                 player.compromisedNodes.push(nodeId);
