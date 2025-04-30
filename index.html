@@ -453,7 +453,7 @@
             var introModal = document.getElementById('intro-modal');
             introModal.style.display = 'none';
             player.startTime = Date.now();
-            play质疑Audio();
+            playBackgroundAudio();
             addToLog('Game started. You are on the Internet. Objective: Compromise the File Server.');
             addToLog(`Initial tools: ${player.tools.join(', ') || 'None'}.`);
             addToLog(`Can initially attack: Node 2, Node 3, Node 4, Node 16.`);
@@ -1019,7 +1019,7 @@
                         } else if (!node.privescDone) {
                             message = `Cannot PWN ${node.originalLabel}. Perform privilege escalation first.`;
                         } else if (node.pwned) {
-                            message = `${node.originalLabel} is already fully compromised (pwned).`;
+                            message = ` ${node.originalLabel} is already fully compromised (pwned).`;
                         } else {
                             node.pwned = true;
                             nodes.update({ id: nodeId, color: { background: '#FF0000', border: '#CC0000' } });
