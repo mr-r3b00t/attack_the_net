@@ -368,7 +368,7 @@
             { id: '2-5', from: 2, to: 5, hidden: true, traversable: false },
             { id: '3-5', from: 3, to: 5, hidden: true, traversable: false },
             { id: '4-5', from: 4, to: 5, hidden: true, traversable: true },
-            { id: '5-6', from: 5, to: 6, hidden: '-true', traversable: true },
+            { id: '5-6', from: 5, to: 6, hidden: true, traversable: true },
             { id: '5-7', from: 5, to: 7, hidden: true, traversable: true },
             { id: '5-8', from: 5, to: 8, hidden: true, traversable: true },
             { id: '5-9', from: 5, to: 9, hidden: true, traversable: true },
@@ -985,6 +985,7 @@
                             }
                             addToLog(`Earned ${pointsAwarded} points for exploiting ${node.originalLabel}. Total points: ${player.points}`);
                             if (nodeId === 4) {
+                                console.log('Revealing Firewall (Node 5)');
                                 nodes.update({ id: 5, hidden: false });
                                 edges.update([
                                     { id: '2-5', hidden: false },
@@ -994,6 +995,7 @@
                                 player.reachableNodes.push(5);
                                 addToLog('Firewall discovered! It can now be attacked after scanning.');
                             } else if (nodeId === 5) {
+                                console.log('Revealing internal network nodes');
                                 nodes.update([
                                     { id: 6, hidden: false, color: { background: '#00D4FF', border: '#0099CC' } },
                                     { id: 7, hidden: false, color: { background: '#00D4FF', border: '#0099CC' } },
@@ -1020,11 +1022,23 @@
                                     { id: '9-10', hidden: false },
                                     { id: '14-17', hidden: false }
                                 ]);
+                                network.fit(); // Redraw network to ensure visibility
                                 addToLog('Firewall compromised! Internal network discovered, including Hypervisor, accessible after scanning.');
                             } else if (nodeId === 15) {
-                                nodes.update({ id: 18, hidden: false, color: { background: '#00D4FF', border: '#0099CC' } });
+                                if (!player.tools.includes('DC Credential')) {
+                                    console.warn('DC Credential missing for Backup Server exploit');
+                                    addToLog('Warning: DC Credential required to exploit Backup Server effectively.');
+                                }
+                                console.log('Revealing Backup Data (Node 18)');
+                                nodes.update({ 
+                                    id: 18, 
+                                    hidden: false, 
+                                    label: 'Backup Data', 
+                                    color: { background: '#00D4FF', border: '#0099CC' } 
+                                });
                                 edges.update({ id: '15-18', hidden: false });
                                 player.reachableNodes.push(18);
+                                network.fit(); // Redraw network to ensure Backup Data is visible
                                 addToLog('Backup Data discovered! It can now be attacked after scanning.');
                             } else if (nodeId === 8) {
                                 const timeTaken = (Date.now() - player.startTime) / 1000;
@@ -1105,7 +1119,7 @@
                 });
                 applyNodeGlow(nodeId, '#FFFF00'); // Yellow glow for failed social engineering exploit
             } else if (node.compromised) {
-                message = `${node.originalLabel} is already compromised.`;
+                message = ` ${node.originalLabel} is already compromised.`;
                 deflectAudio.play().catch(error => {
                     console.error('Deflect audio playback failed:', error);
                 });
