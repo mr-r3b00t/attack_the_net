@@ -272,6 +272,8 @@
         selectAudio.volume = 0.7;
         const exploitAudio = new Audio('/attack_the_net/assets/exploit.mp3');
         exploitAudio.volume = 0.9;
+        const scanAudio = new Audio('/attack_the_net/assets/scan.mp3');
+        scanAudio.volume = 0.7;
 
         function playBackgroundAudio() {
             backgroundAudio.play().catch(error => {
@@ -877,6 +879,9 @@
                             player.scannedNodes.push(nodeId);
                             nodes.update({ id: nodeId, label: node.originalLabel });
                             player.points += 5;
+                            scanAudio.play().catch(error => {
+                                console.error('Scan audio playback failed:', error);
+                            });
                             message = `Scanning ${node.originalLabel}... Found services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}. (+5 points)`;
                             addToLog(`Earned 5 points for scanning ${node.originalLabel}. Total points: ${player.points}`);
                         } else {
@@ -964,17 +969,6 @@
                             updateReachableNodes(nodeId);
                         }
                         break;
-                    case 'scan':
-                        if (!player.scannedNodes.includes(nodeId)) {
-                            player.scannedNodes.push(nodeId);
-                            nodes.update({ id: nodeId, label: node.originalLabel });
-                            player.points += 5;
-                            message = `Scanning ${node.originalLabel}... Found services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}. (+5 points)`;
-                            addToLog(`Earned 5 points for scanning ${node.originalLabel}. Total points: ${player.points}`);
-                        } else {
-                            message = `${node.originalLabel} has already been scanned. Services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}.`;
-                        }
-                        break;
                     case 'privesc':
                         if (nodeId !== 6 && nodeId !== 7) {
                             message = `Privilege escalation is only applicable to Domain Controllers.`;
@@ -998,7 +992,7 @@
                             message = `${node.originalLabel} is already fully compromised (pwned).`;
                         } else {
                             node.pwned = true;
-                            nodes.update({ id: nodeId, color: { background: '#FF0000', border: '#CC0000' } });
+                            nodes.update({ id:  nodeId, color: { background: '#FF0000', border: '#CC0000' } });
                             message = `PWNed ${node.originalLabel}! Domain Controller fully compromised.`;
                             addToLog(`Domain Controller ${node.originalLabel} fully compromised (pwned).`);
                         }
