@@ -367,7 +367,7 @@
             { id: '1-16', from: 1, to: 16, traversable: true },
             { id: '2-5', from: 2, to: 5, hidden: true, traversable: false },
             { id: '3-5', from: 3, to: 5, hidden: true, traversable: false },
-            { id: '4-5', from: 4, to: 5, hidden: true, traversable: true },
+            { id: '4-5', from: 1, to: 4, hidden: true, traversable: true },
             { id: '5-6', from: 5, to: 6, hidden: true, traversable: true },
             { id: '5-7', from: 5, to: 7, hidden: true, traversable: true },
             { id: '5-8', from: 5, to: 8, hidden: true, traversable: true },
@@ -480,7 +480,7 @@
             addToLog('Game started. You are on the Internet. Objective: Compromise the File Server.');
             addToLog(`Initial tools: ${player.tools.join(', ') || 'None'}.`);
             addToLog(`Can initially attack: Node 2, Node 3, Node 4, Node 16.`);
-            addToLog('Left-click a node to open the context menu. Scan nodes to reveal their identity and services (5 points), then exploit them (10 points, 20 for Helpdesk, 50 for Hypervisor; Domain Controllers turn orange on exploit). For Domain Controllers (Nodes 6, 7), after exploiting, perform Privesc (5 points) and then PWN to fully compromise them (turns red). Compromise Backup Server (Node 15) to access Backup Data (Node 18), then Delete it (150 points, turns red). Click "Find Path" to select two nodes and see the kill chain to reach one from the other (all path edges, including the last, turn red for 10 seconds; only VPN Server (Node 4) leads to Firewall (Node 5)). Right-click the Helpdesk (Node 16) for a social engineering exploit. Start with Node 2, Node 3, Node 4, or Node 16 to reveal and attack the Firewall via VPN Server. Compromise the Firewall to access the internal network, then exploit HR Web Server and HR Database Server to obtain User Credential, and finally compromise File Server to win.');
+            addToLog('Left-click a node to open the context menu. Scan nodes to reveal their identity and services (5 points, turns brighter blue), then exploit them (10 points, 20 for Helpdesk, 50 for Hypervisor; Domain Controllers turn orange on exploit, nodes turn red). For Domain Controllers (Nodes 6, 7), after exploiting, perform Privesc (5 points) and then PWN to fully compromise them (turns red). Compromise Backup Server (Node 15) to access Backup Data (Node 18), then Delete it (150 points, turns red). Click "Find Path" to select two nodes and see the kill chain to reach one from the other (all path edges, including the last, turn red for 10 seconds; only VPN Server (Node 4) leads to Firewall (Node 5)). Right-click the Helpdesk (Node 16) for a social engineering exploit. Start with Node 2, Node 3, Node 4, or Node 16 to reveal and attack the Firewall via VPN Server. Compromise the Firewall to access the internal network, then exploit HR Web Server and HR Database Server to obtain User Credential, and finally compromise File Server to win.');
         }
 
         // Show win modal
@@ -914,7 +914,17 @@
                     case 'scan':
                         if (!player.scannedNodes.includes(nodeId)) {
                             player.scannedNodes.push(nodeId);
-                            nodes.update({ id: nodeId, label: node.originalLabel });
+                            const scanColor = {
+                                background: '#00FFFF', // Brighter blue (cyan) for scanned nodes
+                                border: node.group === 'dmz' ? '#0099CC' : node.group === 'internal' ? '#CC3700' : '#CCCCCC'
+                            };
+                            console.log(`Scanning node ${nodeId}: Setting color to`, scanColor);
+                            nodes.update({ 
+                                id: nodeId, 
+                                label: node.originalLabel, 
+                                color: scanColor 
+                            });
+                            network.redraw(); // Force redraw to ensure color update
                             player.points += 5;
                             scanAudio.play().catch(error => {
                                 console.error('Scan audio playback failed:', error);
@@ -1119,7 +1129,7 @@
                 });
                 applyNodeGlow(nodeId, '#FFFF00'); // Yellow glow for failed social engineering exploit
             } else if (node.compromised) {
-                message = ` ${node.originalLabel} is already compromised.`;
+                message = `${node.originalLabel} is already compromised.`;
                 deflectAudio.play().catch(error => {
                     console.error('Deflect audio playback failed:', error);
                 });
