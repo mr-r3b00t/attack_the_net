@@ -264,6 +264,22 @@
         </div>
     </div>
     <script>
+        // Audio setup
+        const backgroundAudio = new Audio('/assets/background.mp3');
+        backgroundAudio.loop = true;
+        backgroundAudio.volume = 0.3; // Lower volume for background
+        const selectAudio = new Audio('/assets/select.mp3');
+        selectAudio.volume = 0.7; // Medium volume for selection
+        const exploitAudio = new Audio('/assets/exploit.mp3');
+        exploitAudio.volume = 0.9; // Louder for impactful action
+
+        // Play background audio when game starts
+        function playBackgroundAudio() {
+            backgroundAudio.play().catch(error => {
+                console.error('Background audio playback failed:', error);
+            });
+        }
+
         var gk_isXlsx = false;
         var gk_xlsxFileLookup = {};
         var gk_fileData = {};
@@ -302,7 +318,6 @@
             { id: 3, label: '', originalLabel: 'Email Server', group: 'dmz', services: ['SMTP'], required_tool: 'Email Credential', contains_tools: ['VPN Credential'], exploitable: true },
             { id: 4, label: '', originalLabel: 'VPN Server', group: 'dmz', services: ['VPN'], required_tool: 'VPN Credential', contains_tools: ['HR Credential', 'Firewall Exploit'], exploitable: true },
             { id: 5, label: '', originalLabel: 'Firewall', group: 'firewall', services: [], required_tool: 'Firewall Exploit', contains_tools: [], exploitable: true, hidden: true },
-            // Note: 'pwned' tracks whether the Domain Controller is fully compromised via the PWN action
             { id: 6, label: '', originalLabel: 'Domain Controller 1', group: 'internal', services: ['RDP'], required_tool: 'DC Credential', contains_tools: [], exploitable: true, hidden: true, privescDone: false, pwned: false },
             { id: 7, label: '', originalLabel: 'Domain Controller 2', group: 'internal', services: ['RDP'], required_tool: 'DC Credential', contains_tools: [], exploitable: true, hidden: true, privescDone: false, pwned: false },
             { id: 8, label: '', originalLabel: 'File Server', group: 'internal', services: [], required_tool: 'User Credential', contains_tools: [], exploitable: true, hidden: true },
@@ -435,6 +450,7 @@
             var introModal = document.getElementById('intro-modal');
             introModal.style.display = 'none';
             player.startTime = Date.now();
+            playBackgroundAudio(); // Start background music
             addToLog('Game started. You are on the Internet. Objective: Compromise the File Server.');
             addToLog(`Initial tools: ${player.tools.join(', ') || 'None'}.`);
             addToLog(`Can initially attack: Node 2, Node 3, Node 4, Node 16.`);
@@ -455,10 +471,12 @@
             const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
             tweetButton.onclick = () => window.open(tweetUrl, '_blank');
             modal.style.display = 'flex';
+            backgroundAudio.pause(); // Pause background music on win
         }
 
         // Restart game
         function restartGame() {
+            backgroundAudio.pause(); // Pause background music
             location.reload();
         }
 
@@ -486,20 +504,18 @@
         }
 
         function findPath(startId, endId) {
-            // Map tools to their source nodes
             const toolSources = {
-                'Web Exploit': 1, // Internet
-                'Email Credential': 2, // Web Server
-                'VPN Credential': [3, 16], // Email Server, Helpdesk
-                'HR Credential': 4, // VPN Server
-                'Firewall Exploit': 4, // VPN Server
-                'Admin Credential': 13, // Workstation
-                'DC Credential': 14, // IT Admin Machine
-                'DB Credential': 9, // HR Web Server
-                'User Credential': 10 // HR Database Server
+                'Web Exploit': 1,
+                'Email Credential': 2,
+                'VPN Credential': [3, 16],
+                'HR Credential': 4,
+                'Firewall Exploit': 4,
+                'Admin Credential': 13,
+                'DC Credential': 14,
+                'DB Credential': 9,
+                'User Credential': 10
             };
 
-            // BFS with credential dependency tracking
             const queue = [{ path: [startId], tools: [...player.tools] }];
             const visited = new Set();
             while (queue.length > 0) {
@@ -514,12 +530,11 @@
                     const node = nodes.get(nodeId);
                     const neighbors = edges.get().filter(edge => 
                         !edge.hidden && 
-                        edge.traversable !== false && // Only use traversable edges
+                        edge.traversable !== false &&
                         (edge.from === nodeId || edge.to === nodeId)
                     ).map(edge => edge.from === nodeId ? edge.to : edge.from)
                     .filter(id => {
                         const neighbor = nodes.get(id);
-                        // Only visit neighbors if we have or can obtain their required tool
                         if (!neighbor.required_tool) return true;
                         if (tools.includes(neighbor.required_tool)) return true;
                         const sourceId = toolSources[neighbor.required_tool];
@@ -534,10 +549,8 @@
                         if (neighborNode.contains_tools && neighborNode.contains_tools.length > 0) {
                             newTools = [...newTools, ...neighborNode.contains_tools];
                         }
-                        // Ensure Workstation is included before IT Admin Machine or Hypervisor
-                        if (neighbor === 14 || neighbor === 17) { // IT Admin Machine or Hypervisor
+                        if (neighbor === 14 || neighbor === 17) {
                             if (!path.includes(13) && !tools.includes('Admin Credential')) {
-                                // Force inclusion of Workstation (Node 13) if not already in path
                                 const workstationPath = [...path, 13];
                                 queue.push({ path: workstationPath, tools: [...newTools, 'Admin Credential'] });
                                 continue;
@@ -547,7 +560,7 @@
                     }
                 }
             }
-            return null; // No path found
+            return null;
         }
 
         function getRequiredSteps(path) {
@@ -560,18 +573,14 @@
                 const node = nodes.get(nodeId);
                 const nodeSteps = [];
 
-                // Skip Internet node (already compromised)
                 if (nodeId === 1) continue;
 
-                // Scan step
                 if (!player.scannedNodes.includes(nodeId)) {
                     nodeSteps.push(`Scan ${node.originalLabel} to reveal services (5 points).`);
                 }
 
-                // Exploit step
                 if (node.exploitable && !node.compromised) {
                     if (nodeId === 16) {
-                        // Helpdesk uses social engineering
                         nodeSteps.push(`Exploit ${node.originalLabel} with social engineering (20 points).`);
                         if (node.contains_tools.length > 0) {
                             currentTools = [...currentTools, ...node.contains_tools];
@@ -587,7 +596,6 @@
                     }
                 }
 
-                // Privesc and PWN for Domain Controllers
                 if ((nodeId === 6 || nodeId === 7) && node.compromised && !node.pwned) {
                     if (!node.privescDone) {
                         nodeSteps.push(`Perform privilege escalation on ${node.originalLabel} (5 points).`);
@@ -597,7 +605,6 @@
                     }
                 }
 
-                // Delete for Backup Data
                 if (nodeId === 18 && !node.deleted) {
                     nodeSteps.push(`Delete ${node.originalLabel} (150 points).`);
                 }
@@ -608,7 +615,6 @@
                 }
             }
 
-            // Add tool acquisition steps if needed
             if (toolsNeeded.size > 0) {
                 steps.unshift('Required tools not currently available:');
                 for (const tool of toolsNeeded) {
@@ -624,7 +630,6 @@
             return steps;
         }
 
-        // Highlight path edges for path finder
         function highlightPath(path) {
             const pathEdges = [];
             for (let i = 0; i < path.length - 1; i++) {
@@ -639,7 +644,6 @@
             }
             edges.update(pathEdges);
 
-            // Reset edge colors and ensure no nodes are selected after 10 seconds
             setTimeout(() => {
                 resetEdgeColors();
                 network.unselectAll();
@@ -647,12 +651,10 @@
             }, 10000);
         }
 
-        // Menu handling
         let isMenuOpening = false;
 
         // Handle node left-click
         network.on('click', function(params) {
-            // Prevent left-click from interfering if right-click menu is open
             const seMenu = document.getElementById('social-engineering-menu');
             if (seMenu.style.display === 'block') {
                 return;
@@ -662,6 +664,9 @@
                 const nodeId = params.nodes[0];
                 const nodeLabel = nodes.get(nodeId).originalLabel;
                 console.log(`Left-clicked node ${nodeId}: ${nodeLabel}`);
+                selectAudio.play().catch(error => {
+                    console.error('Select audio playback failed:', error);
+                });
 
                 if (player.pathfindingMode) {
                     player.selectedNodes.push(nodeId);
@@ -690,19 +695,18 @@
                                 } else {
                                     addToLog('No additional steps required (all nodes already compromised or accessible).');
                                 }
-                                highlightPath(path); // Highlight the path
+                                highlightPath(path);
                             } else {
                                 addToLog(`No valid path found from ${nodes.get(startId).originalLabel} (Node ${startId}) to ${nodes.get(endId).originalLabel} (Node ${endId}). Ensure intermediate nodes are accessible.`);
                             }
                         }
 
-                        // Reset pathfinding mode and clear selections
                         player.pathfindingMode = false;
                         player.selectedNodes = [];
                         closeMenu();
                         closeSocialEngineeringMenu();
-                        network.unselectAll(); // Clear node selections
-                        network.selectNodes([]); // Explicitly set no nodes as selected
+                        network.unselectAll();
+                        network.selectNodes([]);
                         addToLog('Pathfinding mode deactivated.');
                     }
                 } else {
@@ -713,7 +717,6 @@
                     showMenu(nodeId, params.event);
                 }
             } else {
-                // Clear selection if clicking on the canvas (no node selected)
                 closeMenu();
                 closeSocialEngineeringMenu();
                 network.unselectAll();
@@ -726,21 +729,21 @@
             params.event.preventDefault();
             if (params.nodes.length > 0) {
                 const nodeId = params.nodes[0];
-                if (nodeId === 16) { // Helpdesk node
+                if (nodeId === 16) {
                     console.log(`Right-clicked node ${nodeId}: Helpdesk`);
-                    closeMenu(); // Close the standard menu
+                    selectAudio.play().catch(error => {
+                        console.error('Select audio playback failed:', error);
+                    });
+                    closeMenu();
                     showSocialEngineeringMenu(nodeId, params.event);
-                    // Ensure the node remains selected
                     network.selectNodes([nodeId]);
                 }
             } else {
-                // Close menus if right-clicked on canvas
                 closeMenu();
                 closeSocialEngineeringMenu();
             }
         });
 
-        // Close menus on click outside
         document.addEventListener('click', function(event) {
             if (isMenuOpening) {
                 isMenuOpening = false;
@@ -762,7 +765,6 @@
             }
         });
 
-        // Show standard menu
         function showMenu(nodeId, event) {
             isMenuOpening = true;
             const menu = document.getElementById('menu');
@@ -772,28 +774,24 @@
             const deleteButton = document.getElementById('delete-button');
             const node = nodes.get(nodeId);
 
-            // Show Exploit button for scanned nodes (except if fully pwned for DCs or deleted for Backup Data)
             if (player.scannedNodes.includes(nodeId) && !(node.pwned && (nodeId === 6 || nodeId === 7)) && !(node.deleted && nodeId === 18)) {
                 exploitButton.classList.remove('hidden');
             } else {
                 exploitButton.classList.add('hidden');
             }
 
-            // Show Privesc button for Domain Controllers that are compromised but not privescDone
             if ((nodeId === 6 || nodeId === 7) && node.compromised && !node.privescDone) {
                 privescButton.classList.remove('hidden');
             } else {
                 privescButton.classList.add('hidden');
             }
 
-            // Show PWN button for Domain Controllers that have privescDone but not pwned
             if ((nodeId === 6 || nodeId === 7) && node.privescDone && !node.pwned) {
                 pwnButton.classList.remove('hidden');
             } else {
                 pwnButton.classList.add('hidden');
             }
 
-            // Show Delete button for Backup Data that is scanned but not deleted
             if (nodeId === 18 && player.scannedNodes.includes(nodeId) && !node.deleted) {
                 deleteButton.classList.remove('hidden');
             } else {
@@ -805,22 +803,20 @@
             menu.style.display = 'block';
             menu.dataset.nodeId = nodeId;
             console.log(`Menu shown for node ${nodeId}: ${nodes.get(nodeId).originalLabel}`);
-            setTimeout(() => { isMenuOpening = false; }, 0); // Reset flag after event loop
+            setTimeout(() => { isMenuOpening = false; }, 0);
         }
 
-        // Show social engineering menu
         function showSocialEngineeringMenu(nodeId, event) {
             isMenuOpening = true;
             const menu = document.getElementById('social-engineering-menu');
             menu.style.left = '10px';
-            menu.style.top = '50px'; // Offset to avoid overlap with standard menu
+            menu.style.top = '50px';
             menu.style.display = 'block';
             menu.dataset.nodeId = nodeId;
             console.log(`Social Engineering Menu shown for node ${nodeId}: Helpdesk`);
-            setTimeout(() => { isMenuOpening = false; }, 0); // Reset flag after event loop
+            setTimeout(() => { isMenuOpening = false; }, 0);
         }
 
-        // Close standard menu
         function closeMenu() {
             const menu = document.getElementById('menu');
             if (menu.style.display === 'block') {
@@ -829,7 +825,6 @@
             }
         }
 
-        // Close social engineering menu
         function closeSocialEngineeringMenu() {
             const menu = document.getElementById('social-engineering-menu');
             if (menu.style.display === 'block') {
@@ -838,7 +833,6 @@
             }
         }
 
-        // Update reachable nodes
         function updateReachableNodes(newNodeId) {
             const newReachable = edges.get().filter(edge =>
                 edge.from === newNodeId || edge.to === newNodeId
@@ -858,17 +852,14 @@
             }
         }
 
-        // Check if node is reachable
         function isReachable(nodeId) {
             return player.reachableNodes.includes(nodeId) || player.compromisedNodes.includes(nodeId);
         }
 
-        // Check if a Domain Controller is fully compromised (pwned)
         function hasDomainControllerCompromised() {
             return (nodes.get(6).pwned || nodes.get(7).pwned);
         }
 
-        // Perform standard action
         function performAction(action) {
             const nodeId = parseInt(document.getElementById('menu').dataset.nodeId);
             const node = nodes.get(nodeId);
@@ -886,7 +877,7 @@
                         if (!player.scannedNodes.includes(nodeId)) {
                             player.scannedNodes.push(nodeId);
                             nodes.update({ id: nodeId, label: node.originalLabel });
-                            player.points += 5; // Award 5 points for scan
+                            player.points += 5;
                             message = `Scanning ${node.originalLabel}... Found services: ${node.services.length > 0 ? node.services.join(', ') : 'None'}. (+5 points)`;
                             addToLog(`Earned 5 points for scanning ${node.originalLabel}. Total points: ${player.points}`);
                         } else {
@@ -913,6 +904,9 @@
                             nodes.update({ id: nodeId, color: exploitColor });
                             const pointsAwarded = nodeId === 17 ? 50 : 10;
                             player.points += pointsAwarded;
+                            exploitAudio.play().catch(error => {
+                                console.error('Exploit audio playback failed:', error);
+                            });
                             if (node.contains_tools.length > 0) {
                                 player.tools = player.tools.concat(node.contains_tools);
                                 message = `Exploited ${node.originalLabel}! Gained: ${node.contains_tools.join(', ')}. (+${pointsAwarded} points)`;
@@ -941,7 +935,7 @@
                                     { id: 13, hidden: false },
                                     { id: 14, hidden: false },
                                     { id: 15, hidden: false },
-                                    { id: 17, hidden: false } // Reveal Hypervisor
+                                    { id: 17, hidden: false }
                                 ]);
                                 edges.update([
                                     { id: '5-6', hidden: false },
@@ -954,12 +948,12 @@
                                     { id: '5-14', hidden: false },
                                     { id: '5-15', hidden: false },
                                     { id: '9-10', hidden: false },
-                                    { id: '14-17', hidden: false } // Reveal IT Admin to Hypervisor edge
+                                    { id: '14-17', hidden: false }
                                 ]);
                                 addToLog('Firewall compromised! Internal network discovered, including Hypervisor, accessible after scanning.');
                             } else if (nodeId === 15) {
-                                nodes.update({ id: 18, hidden: false }); // Reveal Backup Data
-                                edges.update({ id: '15-18', hidden: false }); // Reveal Backup Server to Backup Data edge
+                                nodes.update({ id: 18, hidden: false });
+                                edges.update({ id: '15-18', hidden: false });
                                 player.reachableNodes.push(18);
                                 addToLog('Backup Data discovered! It can now be attacked after scanning.');
                             } else if (nodeId === 8) {
@@ -980,7 +974,7 @@
                             message = `Privilege escalation already performed on ${node.originalLabel}.`;
                         } else {
                             node.privescDone = true;
-                            player.points += 5; // Award 5 points for privesc
+                            player.points += 5;
                             message = `Privilege escalation successful on ${node.originalLabel}! (+5 points)`;
                             addToLog(`Earned 5 points for privilege escalation on ${node.originalLabel}. Total points: ${player.points}`);
                         }
@@ -994,7 +988,7 @@
                             message = `${node.originalLabel} is already fully compromised (pwned).`;
                         } else {
                             node.pwned = true;
-                            nodes.update({ id: nodeId, color: { background: '#FF0000', border: '#CC0000' } }); // Set red color on PWN
+                            nodes.update({ id: nodeId, color: { background: '#FF0000', border: '#CC0000' } });
                             message = `PWNed ${node.originalLabel}! Domain Controller fully compromised.`;
                             addToLog(`Domain Controller ${node.originalLabel} fully compromised (pwned).`);
                         }
@@ -1008,8 +1002,8 @@
                             message = `${node.originalLabel} has already been deleted.`;
                         } else {
                             node.deleted = true;
-                            nodes.update({ id: nodeId, color: { background: '#FF0000', border: '#CC0000' } }); // Set red color on delete
-                            player.points += 150; // Award 150 points for delete
+                            nodes.update({ id: nodeId, color: { background: '#FF0000', border: '#CC0000' } });
+                            player.points += 150;
                             message = `Deleted ${node.originalLabel}! Backup data destroyed. (+150 points)`;
                             addToLog(`Earned 150 points for deleting ${node.originalLabel}. Total points: ${player.points}`);
                         }
@@ -1021,7 +1015,6 @@
             closeMenu();
         }
 
-        // Perform social engineering exploit
         function performSocialEngineeringExploit() {
             const nodeId = parseInt(document.getElementById('social-engineering-menu').dataset.nodeId);
             const node = nodes.get(nodeId);
@@ -1039,7 +1032,10 @@
                 node.compromised = true;
                 player.compromisedNodes.push(nodeId);
                 nodes.update({ id: nodeId, color: { background: '#FF0000', border: '#CC0000' } });
-                player.points += 20; // Award 20 points for Helpdesk exploit
+                player.points += 20;
+                exploitAudio.play().catch(error => {
+                    console.error('Exploit audio playback failed:', error);
+                });
                 if (node.contains_tools.length > 0) {
                     player.tools = player.tools.concat(node.contains_tools);
                     message = `Social engineering exploit on ${node.originalLabel} succeeded! Gained: ${node.contains_tools.join(', ')}. (+20 points)`;
