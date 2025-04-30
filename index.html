@@ -367,7 +367,7 @@
             { id: '1-16', from: 1, to: 16, traversable: true },
             { id: '2-5', from: 2, to: 5, hidden: true, traversable: false },
             { id: '3-5', from: 3, to: 5, hidden: true, traversable: false },
-            { id: '4-5', from: 1, to: 4, hidden: true, traversable: true },
+            { id: '4-5', from: 4, to: 5, hidden: true, traversable: true }, // Fixed: VPN Server to Firewall
             { id: '5-6', from: 5, to: 6, hidden: true, traversable: true },
             { id: '5-7', from: 5, to: 7, hidden: true, traversable: true },
             { id: '5-8', from: 5, to: 8, hidden: true, traversable: true },
@@ -995,14 +995,16 @@
                             }
                             addToLog(`Earned ${pointsAwarded} points for exploiting ${node.originalLabel}. Total points: ${player.points}`);
                             if (nodeId === 4) {
-                                console.log('Revealing Firewall (Node 5)');
+                                console.log('Revealing Firewall (Node 5) from VPN Server (Node 4)');
                                 nodes.update({ id: 5, hidden: false });
                                 edges.update([
                                     { id: '2-5', hidden: false },
                                     { id: '3-5', hidden: false },
                                     { id: '4-5', hidden: false }
                                 ]);
+                                console.log('Edge 4-5 updated to visible');
                                 player.reachableNodes.push(5);
+                                network.fit(); // Redraw to ensure correct route is visible
                                 addToLog('Firewall discovered! It can now be attacked after scanning.');
                             } else if (nodeId === 5) {
                                 console.log('Revealing internal network nodes');
